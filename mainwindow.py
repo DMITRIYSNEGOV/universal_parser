@@ -1,0 +1,103 @@
+# -*- coding: utf-8 -*-
+
+# Form implementation generated from reading ui file 'mainwindow.ui'
+#
+# Created by: PyQt5 UI code generator 5.12.1
+#
+# WARNING! All changes made in this file will be lost!
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+
+class Ui_MainWindow(object):
+    def setupUi(self, MainWindow):
+        MainWindow.setObjectName("MainWindow")
+        MainWindow.resize(997, 720)
+        self.centralwidget = QtWidgets.QWidget(MainWindow)
+        self.centralwidget.setObjectName("centralwidget")
+        self.section_url = QtWidgets.QLineEdit(self.centralwidget)
+        self.section_url.setGeometry(QtCore.QRect(10, 10, 651, 21))
+        self.section_url.setObjectName("section_url")
+        self.get_html_button = QtWidgets.QPushButton(self.centralwidget)
+        self.get_html_button.setEnabled(True)
+        self.get_html_button.setGeometry(QtCore.QRect(330, 670, 111, 23))
+        self.get_html_button.setObjectName("get_html_button")
+        self.section_tag = QtWidgets.QPlainTextEdit(self.centralwidget)
+        self.section_tag.setGeometry(QtCore.QRect(10, 40, 341, 261))
+        self.section_tag.setObjectName("section_tag")
+        self.product_tag = QtWidgets.QPlainTextEdit(self.centralwidget)
+        self.product_tag.setGeometry(QtCore.QRect(360, 40, 361, 261))
+        self.product_tag.setObjectName("product_tag")
+        self.groupBox_browser = QtWidgets.QGroupBox(self.centralwidget)
+        self.groupBox_browser.setGeometry(QtCore.QRect(10, 310, 131, 121))
+        self.groupBox_browser.setObjectName("groupBox_browser")
+        self.radio_firefox32 = QtWidgets.QRadioButton(self.groupBox_browser)
+        self.radio_firefox32.setGeometry(QtCore.QRect(10, 20, 82, 17))
+        self.radio_firefox32.setObjectName("radio_firefox32")
+        self.radio_firefox64 = QtWidgets.QRadioButton(self.groupBox_browser)
+        self.radio_firefox64.setGeometry(QtCore.QRect(10, 40, 82, 17))
+        self.radio_firefox64.setObjectName("radio_firefox64")
+        self.radio_edge = QtWidgets.QRadioButton(self.groupBox_browser)
+        self.radio_edge.setGeometry(QtCore.QRect(10, 60, 82, 17))
+        self.radio_edge.setObjectName("radio_edge")
+        self.radio_phantomJS = QtWidgets.QRadioButton(self.groupBox_browser)
+        self.radio_phantomJS.setGeometry(QtCore.QRect(10, 80, 82, 17))
+        self.radio_phantomJS.setChecked(True)
+        self.radio_phantomJS.setObjectName("radio_phantomJS")
+        self.url_product_list = QtWidgets.QPlainTextEdit(self.centralwidget)
+        self.url_product_list.setGeometry(QtCore.QRect(740, 40, 241, 501))
+        self.url_product_list.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.url_product_list.setPlainText("")
+        self.url_product_list.setObjectName("url_product_list")
+        self.groupBox_pag = QtWidgets.QGroupBox(self.centralwidget)
+        self.groupBox_pag.setEnabled(False)
+        self.groupBox_pag.setGeometry(QtCore.QRect(150, 320, 191, 91))
+        self.groupBox_pag.setTitle("")
+        self.groupBox_pag.setObjectName("groupBox_pag")
+        self.pag_name = QtWidgets.QLineEdit(self.groupBox_pag)
+        self.pag_name.setGeometry(QtCore.QRect(20, 60, 61, 21))
+        self.pag_name.setReadOnly(False)
+        self.pag_name.setObjectName("pag_name")
+        self.pag_from = QtWidgets.QLineEdit(self.groupBox_pag)
+        self.pag_from.setGeometry(QtCore.QRect(90, 60, 41, 20))
+        self.pag_from.setReadOnly(False)
+        self.pag_from.setObjectName("pag_from")
+        self.pag_to = QtWidgets.QLineEdit(self.groupBox_pag)
+        self.pag_to.setGeometry(QtCore.QRect(140, 60, 41, 20))
+        self.pag_to.setReadOnly(False)
+        self.pag_to.setObjectName("pag_to")
+        self.radio_pag_type_parameter = QtWidgets.QRadioButton(self.groupBox_pag)
+        self.radio_pag_type_parameter.setGeometry(QtCore.QRect(20, 10, 82, 17))
+        self.radio_pag_type_parameter.setChecked(True)
+        self.radio_pag_type_parameter.setObjectName("radio_pag_type_parameter")
+        self.radio_pag_type_path = QtWidgets.QRadioButton(self.groupBox_pag)
+        self.radio_pag_type_path.setGeometry(QtCore.QRect(20, 30, 82, 17))
+        self.radio_pag_type_path.setObjectName("radio_pag_type_path")
+        self.check_is_pag = QtWidgets.QCheckBox(self.centralwidget)
+        self.check_is_pag.setGeometry(QtCore.QRect(150, 310, 81, 17))
+        self.check_is_pag.setObjectName("check_is_pag")
+        MainWindow.setCentralWidget(self.centralwidget)
+
+        self.retranslateUi(MainWindow)
+        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def retranslateUi(self, MainWindow):
+        _translate = QtCore.QCoreApplication.translate
+        MainWindow.setWindowTitle(_translate("MainWindow", "Универсальный парсер"))
+        self.section_url.setPlaceholderText(_translate("MainWindow", "Страница раздела"))
+        self.get_html_button.setText(_translate("MainWindow", "Получить страницу"))
+        self.section_tag.setPlaceholderText(_translate("MainWindow", "Код раздела"))
+        self.product_tag.setPlaceholderText(_translate("MainWindow", "Код продукта"))
+        self.groupBox_browser.setTitle(_translate("MainWindow", "Браузер"))
+        self.radio_firefox32.setText(_translate("MainWindow", "FireFox(x32)"))
+        self.radio_firefox64.setText(_translate("MainWindow", "FireFox(x64)"))
+        self.radio_edge.setText(_translate("MainWindow", "Edje"))
+        self.radio_phantomJS.setText(_translate("MainWindow", "PhantomJS"))
+        self.pag_name.setPlaceholderText(_translate("MainWindow", "Название"))
+        self.pag_from.setPlaceholderText(_translate("MainWindow", "От"))
+        self.pag_to.setPlaceholderText(_translate("MainWindow", "До"))
+        self.radio_pag_type_parameter.setText(_translate("MainWindow", "Параметр"))
+        self.radio_pag_type_path.setText(_translate("MainWindow", "Путь"))
+        self.check_is_pag.setText(_translate("MainWindow", "Пагинация"))
+
+
