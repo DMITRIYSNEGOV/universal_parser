@@ -19,6 +19,7 @@ import selenium.webdriver
 # from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 
+import csv
 # socks.set_default_proxy(socks.SOCKS5, "localhost", 9150)
 # socket.socket = socks.socksocket
 
@@ -70,11 +71,13 @@ def wait_for_ajax(driver):
         pass
 
 def get_html_code(url):
-    driver = init_driver()
-    driver.get(url)
-    wait_for_ajax(driver)
-    html_code = driver.page_source
-    driver.close()
+    try:
+        driver = init_driver()
+        driver.get(url)
+        wait_for_ajax(driver)
+        html_code = driver.page_source
+    finally:
+        driver.close()
     return html_code
 
 def get_new_pag_url(section_url, params):
@@ -213,8 +216,14 @@ def get_list_link(section_url, section_tag, product_tag, product_name, product_a
             break  
         for product in list_product:
             try:
-                absolute_url = get_absolute_url(url=product.find("a", href=True)["href"],
+                # поиск атрибута href
+                if("href" not in product.attrs):
+                    absolute_url = get_absolute_url(url=product.find("a", href=True)["href"],
                  section_url=section_url)
+                else:
+                    absolute_url = get_absolute_url(url=product["href"],
+                        section_url=section_url)
+                
                 if(is_correct_url(absolute_url)):
                     url_product_list.append(absolute_url)
                     print(absolute_url)
@@ -240,11 +249,27 @@ def get_list_link(section_url, section_tag, product_tag, product_name, product_a
             product_attr_list = get_list_attrs(html_code, product_attr)
             product_list.append({"name": name})
             print(name)
-            # вывод атрибутов товара
-            for i in product_attr_list:
-                print(i.text)
+            # записывание атрибутов в csv файл
+            with open("test.csv", "a", newline='') as csv_file:
+                writer = csv.writer(csv_file)
+
+                # задаем название атрбутов
+                attr_name = ["URL", "Название"]
+                for i in range(0, len(product_attr_list)):
+                    if (i%2)==0:
+                        attr_name.append(product_attr_list[i].text)
+
+                writer.writerow(attr_name)
+                # задаем значения атрибутов
+                product_info = [product_url, name]
+                for i in range(0, len(product_attr_list)):
+                    if(i%2 != 0):
+                        print(product_attr_list[i].text)
+                        product_info.append(product_attr_list[i].text)
+                writer.writerow(product_info)
             print("\n\n")
-        except:
+        except Exception as e:
+            print(e)
             print("{} ERROR".format(product_url))
     print(len(product_list))
 
@@ -254,10 +279,9 @@ get_list_link(
             pag_type = "parameter",
             pag_name="page",
             pag_from=1, 
-            pag_to=1,
+            pag_to=2,
             section_url="http://технология35.рф/product-category/vitriny-kholodilnye-morozilnye-universalnye-konditerskie-dlia-morozhenogo-kassovye-prilavki/",
-            section_tag="""
-            <div class="change_products sn-products-container">
+            section_tag="""<div class="change_products sn-products-container">
 
 <div class="product-card-wide" data-product="14686">
     <a class="product-card-wide-body" href="/product/konditerskaia-kholodilnaia-vitrina-cryspi-vpv-012-08-octava-k-1200-ral-3002-168467-o-vpvk1-120g-3002/">
@@ -1029,103 +1053,91 @@ get_list_link(
     </form>
 </div>
 
-</div>
-"""
-
-            
-            ,
-            product_tag = """<div class="product-card-wide" data-product="14686">
-    <a class="product-card-wide-body" href="/product/konditerskaia-kholodilnaia-vitrina-cryspi-vpv-012-08-octava-k-1200-ral-3002-168467-o-vpvk1-120g-3002/">
+</div>""",
+            product_tag = """<a class="product-card-wide-body" href="/product/konditerskaia-kholodilnaia-vitrina-eqta-gusto-vpv-026-123-t-m-eqta-gusto-k-850-d-ral-9001-o0000044546-gu-eqt-vpvk1-85d-9001/">
         
             <div class="product-card-wide-thumb">
-                <img class="product-card-wide-thumb__image" src="/media/filer_public_thumbnails/filer_public/c8/17/c8178c31-75dc-4d60-b727-4dc1bdecfc5d/168467.png__150x150_q85_subsampling-2.jpg" alt="Кондитерская холодильная витрина Cryspi ВПВ 0,12-0,8 (Octava К 1200) (RAL 3002)">
+                <img class="product-card-wide-thumb__image" src="/media/filer_public_thumbnails/filer_public/66/05/6605b20c-4925-43fd-9e7a-9eec774e516e/o0000044546.png__150x150_q85_subsampling-2.jpg" alt="Кондитерская холодильная витрина Eqta_Gusto ВПВ 0,26-1,23 (т.м.EQTA Gusto К 850 Д) (RAL 9001)">
                 <div class="product-card-wide-preview">
-                    <img class="product-card-wide-preview__image" src="/media/filer_public/c8/17/c8178c31-75dc-4d60-b727-4dc1bdecfc5d/168467.png" alt="Кондитерская холодильная витрина Cryspi ВПВ 0,12-0,8 (Octava К 1200) (RAL 3002)">
+                    <img class="product-card-wide-preview__image" src="/media/filer_public/66/05/6605b20c-4925-43fd-9e7a-9eec774e516e/o0000044546.png" alt="Кондитерская холодильная витрина Eqta_Gusto ВПВ 0,26-1,23 (т.м.EQTA Gusto К 850 Д) (RAL 9001)">
                 </div>
             </div>
         
-        <p class="product-card-wide-title">Кондитерская холодильная витрина Cryspi ВПВ 0,12-0,8 (Octava К 1200) (RAL 3002)</p>
+        <p class="product-card-wide-title">Кондитерская холодильная витрина Eqta_Gusto ВПВ 0,26-1,23 (т.м.EQTA Gusto К 850 Д) (RAL 9001)</p>
         <div class="product-card-wide-prices">
             
                 
-                    <p class="product-card-wide-price">54 021 руб.</p>
+                    <p class="product-card-wide-price">72 454 руб.</p>
                 
             
         </div>
-    </a>
-
-    <form class="product-card-wide-form" action="/api/shop/cart/add/" method="POST">
-        
-        <input type="hidden" name="product-id" value="14686">
-        
-        
-        <div class="badges">
-            
-            
-            
-        </div>
-        
-            <div class="amount">
-                <div class="product-amount">
-                    <div class="product-amount__button product-amount__button_minus">◄</div>
-                    <div class="product-amount__field">
-                        <input type="number" name="product-count" min="1" max="100" value="1">
-                    </div>
-                    <div class="product-amount__button product-amount__button_plus">►</div>
-                </div>
-            </div>
-        
-        <div class="product-card-wide-actions">
-            <button class="product-card-wide-action-btn sn-add-to-favorites " data-url="/api/shop/favorites/add" type="button">
-                <svg class="product-card-wide-action-btn__icon" role="img">
-                    <use xlink:href="/static/images/sprite.svg#heart"></use>
-                </svg>
-            </button>
-            <button class="product-card-wide-action-btn sn-add-to-compare " data-url="/api/shop/compare/add" type="button">
-                <svg class="product-card-wide-action-btn__icon" role="img">
-                    <use xlink:href="/static/images/sprite.svg#compare_icon"></use>
-                </svg>
-            </button>
-            
-                <div class="product-card-wide-add-cart-wrap">
-                    <button class="product-card-wide-add-cart add-to-cart sn-add-to-cart btn btn-outline-primary" type="submit" onclick="ym(52347178, 'reachGoal', 'vkorziny'); return true;">В корзину</button>
-                    <div class="go-to-cart">
-                        <span>Товар добавлен в корзину</span>
-                        <a class="btn btn-primary" onclick="event.stopPropagation()" href="/shop/cart/">Перейти в корзину</a>
-                    </div>
-                </div>
-            
-        </div>
-    </form>
-</div>
-""",
-            product_name = """<p class="page-title product-form__title" itemprop="name">Кондитерская холодильная витрина Cryspi ВПВ 0,12-0,8 (Octava К 1200) (RAL 3002)</p>""",
-            product_attr = """<div class="tab-pane fade active show" id="tab_container-2" role="tabpanel" aria-labelledby="tab-2">
-                            <div class="tab-pane__characteristics">
+    </a>""",
+            product_name = """<p class="page-title product-form__title" itemprop="name">Кондитерская холодильная витрина Eqta_Gusto ВПВ 0,26-1,23 (т.м.EQTA Gusto К 850 Д) (RAL 9001)</p>""",
+            product_attr = """<div class="tab-pane__characteristics">
                                 
                                     <div class="tab-pane__characteristic-row">
                                             <b class="tab-pane__characteristic-row-title">Страна</b>
-                                            <span class="tab-pane__characteristic-row-value">Португалия</span>
+                                            <span class="tab-pane__characteristic-row-value">Россия</span>
                                         </div>
                                 
                                     <div class="tab-pane__characteristic-row">
                                             <b class="tab-pane__characteristic-row-title">Высота (мм)</b>
-                                            <span class="tab-pane__characteristic-row-value">1300</span>
+                                            <span class="tab-pane__characteristic-row-value">1314</span>
                                         </div>
                                 
                                     <div class="tab-pane__characteristic-row">
                                             <b class="tab-pane__characteristic-row-title">Ширина (мм)</b>
-                                            <span class="tab-pane__characteristic-row-value">900</span>
+                                            <span class="tab-pane__characteristic-row-value">764</span>
                                         </div>
                                 
                                     <div class="tab-pane__characteristic-row">
                                             <b class="tab-pane__characteristic-row-title">Длина (мм)</b>
-                                            <span class="tab-pane__characteristic-row-value">2050</span>
+                                            <span class="tab-pane__characteristic-row-value">852</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Энергопотребление (кВтсутки)</b>
+                                            <span class="tab-pane__characteristic-row-value">8,23</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Холодопроизводительность (кВт)</b>
+                                            <span class="tab-pane__characteristic-row-value">0,482</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Хладагент</b>
+                                            <span class="tab-pane__characteristic-row-value">R404a</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Тип охлаждения</b>
+                                            <span class="tab-pane__characteristic-row-value">Динамическое</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Тип агрегата</b>
+                                            <span class="tab-pane__characteristic-row-value">Встроенный</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Способ установки</b>
+                                            <span class="tab-pane__characteristic-row-value">Напольный</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Площадь экспозиции (м2)</b>
+                                            <span class="tab-pane__characteristic-row-value">1,23</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Оттайка</b>
+                                            <span class="tab-pane__characteristic-row-value">Автоматическая</span>
                                         </div>
                                 
                                     <div class="tab-pane__characteristic-row">
                                             <b class="tab-pane__characteristic-row-title">Напряжение (В)</b>
-                                            <span class="tab-pane__characteristic-row-value">230</span>
+                                            <span class="tab-pane__characteristic-row-value">220</span>
                                         </div>
                                 
                                     <div class="tab-pane__characteristic-row">
@@ -1134,34 +1146,64 @@ get_list_link(
                                         </div>
                                 
                                     <div class="tab-pane__characteristic-row">
-                                            <b class="tab-pane__characteristic-row-title">Мощность (Вт)</b>
-                                            <span class="tab-pane__characteristic-row-value">825</span>
+                                            <b class="tab-pane__characteristic-row-title">Наличие ночных шторок</b>
+                                            <span class="tab-pane__characteristic-row-value">Нет</span>
                                         </div>
                                 
                                     <div class="tab-pane__characteristic-row">
-                                            <b class="tab-pane__characteristic-row-title">Контроллер</b>
-                                            <span class="tab-pane__characteristic-row-value">Danfoss</span>
+                                            <b class="tab-pane__characteristic-row-title">Наличие запасника</b>
+                                            <span class="tab-pane__characteristic-row-value">Нет</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Назначение витрин</b>
+                                            <span class="tab-pane__characteristic-row-value">Кондитерская</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Мощность (Вт)</b>
+                                            <span class="tab-pane__characteristic-row-value">626</span>
                                         </div>
                                 
                                     <div class="tab-pane__characteristic-row">
                                             <b class="tab-pane__characteristic-row-title">Компрессор</b>
-                                            <span class="tab-pane__characteristic-row-value">Electrolux</span>
+                                            <span class="tab-pane__characteristic-row-value">Aspera</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Количество полок</b>
+                                            <span class="tab-pane__characteristic-row-value">3</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Гарантия</b>
+                                            <span class="tab-pane__characteristic-row-value">12</span>
+                                        </div>
+                                
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">Габариты в упаковке (мм)</b>
+                                            <span class="tab-pane__characteristic-row-value">1050x990x1475</span>
                                         </div>
                                 
                                     <div class="tab-pane__characteristic-row">
                                             <b class="tab-pane__characteristic-row-title">Бренд</b>
-                                            <span class="tab-pane__characteristic-row-value">Jordao</span>
+                                            <span class="tab-pane__characteristic-row-value">Eqta_Gusto</span>
                                         </div>
                                 
                                     <div class="tab-pane__characteristic-row">
                                             <b class="tab-pane__characteristic-row-title">T (min)</b>
-                                            <span class="tab-pane__characteristic-row-value">2</span>
+                                            <span class="tab-pane__characteristic-row-value">1</span>
                                         </div>
                                 
                                     <div class="tab-pane__characteristic-row">
                                             <b class="tab-pane__characteristic-row-title">T (max)</b>
-                                            <span class="tab-pane__characteristic-row-value">4</span>
+                                            <span class="tab-pane__characteristic-row-value">10</span>
                                         </div>
                                 
-                            </div></div>"""
+                                    <div class="tab-pane__characteristic-row">
+                                            <b class="tab-pane__characteristic-row-title">RAL</b>
+                                            <span class="tab-pane__characteristic-row-value">9001</span>
+                                        </div>
+                                
+                            </div>"""
             )
