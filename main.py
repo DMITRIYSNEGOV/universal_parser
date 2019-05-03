@@ -21,7 +21,11 @@ from requests.models import PreparedRequest
 
 from selenium import webdriver
 import selenium.webdriver
+# from selenium.webdriver.firefox.options import Options
+# from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
+
+import csv
 
 
 def _remove_attrs(soup):
@@ -38,21 +42,24 @@ def get_absolute_url(url, section_url):
     else:
         return "{}/{}".format(re.match(r"^(https|http):\/\/[^\?]*", section_url).group(0), url)
 
-def init_driver(type_browser = "phantomjs"):
+def init_driver(type_browser = "firefox64"):
     try:
         if(type_browser == "firefox32"):
             options = webdriver.firefox.options.Options()
             options.add_argument('-headless')
-            driver = webdriver.Firefox(service_log_path='NUL', options=options, executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\Firefox32\\geckodriver.exe"))
+            driver = webdriver.Firefox(service_log_path='NUL', options=options, 
+                executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\Firefox32\\geckodriver.exe"))
         elif(type_browser == "firefox64"):
             options = webdriver.firefox.options.Options()
             options.add_argument('-headless')
-            driver = webdriver.Firefox(service_log_path='NUL', options=options, executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\Firefox64\\geckodriver.exe"))
+            driver = webdriver.Firefox(service_log_path='NUL', options=options, 
+                executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\Firefox64\\geckodriver.exe"))
         elif(type_browser == "edje"):
             driver = webdriver.Edge(os.path.join(os.path.abspath(os.curdir),"drivers\\MicrosoftWebDriver.exe"))
         else:
             driver = webdriver.PhantomJS(os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"))
-    except:
+    except Exception as e:
+        print(e)
         driver = webdriver.PhantomJS(os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"))
     driver.wait = WebDriverWait(driver, 60)
     return driver
@@ -63,14 +70,17 @@ def wait_for_ajax(driver):
         wait.until(lambda driver: driver.execute_script('return jQuery.active') == 0)
         wait.until(lambda driver: driver.execute_script('return document.readyState') == 'complete')
     except Exception as e:
+        print(e)
         pass
 
 def get_html_code(url, type_browser):
-    driver = init_driver(type_browser)
-    driver.get(url)
-    wait_for_ajax(driver)
-    html_code = driver.page_source
-    driver.close()
+    try:
+        driver = init_driver(type_browser)
+        driver.get(url)
+        wait_for_ajax(driver)
+        html_code = driver.page_source
+    finally:
+        driver.close()
     return html_code
 
 def get_new_pag_url(section_url, params):
@@ -83,6 +93,52 @@ def is_correct_url(url):
         return False
     else:
         return True
+
+def get_product_name(html_code, product_name):
+        soup_product_name = bs(product_name, "html.parser")
+
+        soup_product = bs(html_code, "html.parser")
+        product_name_value = soup_product.find(soup_product_name.find().name,
+         attrs=soup_product_name.find().attrs).text
+        return product_name_value
+
+def get_list_attrs(html_code, html_attr):
+    # создаем объекты для парсинга
+    soup_product = bs(html_code, "html.parser")
+    html_attr = bs(html_attr, "html.parser")
+    # находим атрибуты на странице товара
+    html_attr = soup_product.find(html_attr.find().name,
+        attrs=html_attr.find().attrs)
+
+    list_attrs = []
+
+    html_list = html_attr.find_all(text=False, recursive=True)
+    for i in html_list:
+        # поиск внутреннего тега
+        while(i.findChildren() != []):
+            i= i.findChildren()[0]
+        list_attrs.append(i)
+        # print("_|_{}_|_".format(i))
+        # print("")
+
+    result_list_attr = []
+    # извлекаем уникальные теги
+    for i in range(0, len(list_attrs)-1):
+        if(list_attrs[i]==list_attrs[i+1]):
+            continue
+        # print(list_attrs[i])
+        result_list_attr.append(list_attrs[i])
+    # добавляем последний уникальный элемент
+
+    if(result_list_attr == []):
+        result_list_attr.append(html_attr)
+    elif(result_list_attr[-1] != list_attrs[-1]):
+        result_list_attr.append(list_attrs[-1])
+    # вывод уникальных тегов с контентом
+    # for i in result_list_attr:
+    #     print("_|_{}_|_".format(i.text))
+
+    return result_list_attr
 
 class mywindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -110,6 +166,9 @@ class mywindow(QtWidgets.QMainWindow):
             self.ui.groupBox_pag.setEnabled(True)
         else:
             self.ui.groupBox_pag.setEnabled(False)
+
+    def print_text(self, text):
+        
 
     def get_list_link(self):
         section_url = self.ui.section_url.text()
@@ -157,7 +216,6 @@ class mywindow(QtWidgets.QMainWindow):
             if(is_correct_url(product_link)):
                 url_product_list.append(product_link)
                 print(product_link)
-                self.ui.url_product_list.appendPlainText(product_link)
         print(len(list_product))
 
         # переход на следующую страницу
@@ -177,7 +235,8 @@ class mywindow(QtWidgets.QMainWindow):
                 html_code = get_html_code(url = new_url, type_browser = type_browser)
 
                 soup_section = bs(html_code, "lxml")
-                soup_section = soup_section.find( bs(section_tag, "html.parser").find().name, attrs=bs(section_tag, "html.parser").find().attrs )
+                soup_section = soup_section.find( bs(section_tag, "html.parser").find().name,
+                 attrs=bs(section_tag, "html.parser").find().attrs )
 
                 soup_product = bs(product_tag, "html.parser")
                 try:
@@ -187,19 +246,28 @@ class mywindow(QtWidgets.QMainWindow):
                             class_value = dict_attr["class"][0]
                         else:
                             class_value = dict_attr["class"]
-                        list_product = soup_section.find_all(soup_product.find().name, attrs={"class": class_value})
+                        list_product = soup_section.find_all(soup_product.find().name,
+                         attrs={"class": class_value})
                     else:
                         list_product = soup_section.find_all(soup_product.find().name)
 
-                except AttributeError:
+                except Exception as e:
+                    print("ERROR")
+                    print(e)
                     break  
                 for product in list_product:
                     try:
-                        absolute_url = get_absolute_url(url=product.find("a", href=True)["href"], section_url=section_url)
+                        # поиск атрибута href
+                        if("href" not in product.attrs):
+                            absolute_url = get_absolute_url(url=product.find("a", href=True)["href"],
+                         section_url=section_url)
+                        else:
+                            absolute_url = get_absolute_url(url=product["href"],
+                                section_url=section_url)
+
                         if(is_correct_url(absolute_url)):
                             url_product_list.append(absolute_url)
                             print(absolute_url)
-                            self.ui.url_product_list.appendPlainText(absolute_url)
                     except Exception as e:
                         print(e)
                         print(product)
@@ -207,12 +275,55 @@ class mywindow(QtWidgets.QMainWindow):
                 print(len(list_product))
 
         # вывод всех URL товаров и их количество
-        self.ui.url_product_list.clear()
         url_product_list = list(set(url_product_list))
-        for i in url_product_list:
-            print(i)   
-            self.ui.url_product_list.appendPlainText(i)    
+        for product_url in url_product_list:
+            print(product_url)
+            # вывод URL продукта в правую панель на главной странице
+            self.ui.url_product_list.appendPlainText(product_url)   
         print(len(url_product_list))
+
+        # диалоговое сообщение о завершении парсинга
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Успешно")
+        msg.setText("Получены {} ссылок на товары".format(len(url_product_list)))
+        msg.exec();
+
+        # вывод названий и атрибутов продуктов
+        # product_list = []
+        # for product_url in url_product_list:
+        #     try:
+        #         html_code = get_html_code(url = product_url, type_browser = type_browser)
+        #         name = get_product_name(html_code, product_name)
+
+        #         product_attr_list = get_list_attrs(html_code, product_attr)
+        #         product_list.append({"name": name})
+        #         print(name)
+        #         # записывание атрибутов в csv файл
+        #         with open("test.csv", "a", newline='') as csv_file:
+        #             writer = csv.writer(csv_file)
+
+        #             # задаем название атрбутов
+        #             attr_name_list = ["URL", "Название"]
+        #             for i in range(0, len(product_attr_list)):
+        #                 if (i%2)==0:
+        #                     attr_name_list.append(product_attr_list[i].text)
+
+        #             writer.writerow(attr_name_list)
+
+        #             # задаем значения атрибутов
+        #             product_info = [product_url, name]
+        #             for i in range(0, len(product_attr_list)):
+        #                 if(i%2 != 0):
+        #                     print(product_attr_list[i].text)
+        #                     product_info.append(product_attr_list[i].text)
+        #             writer.writerow(product_info)
+        #         print("\n\n")
+        #     except Exception as e:
+        #         print(e)
+        #         print("{} ERROR".format(product_url))
+        # print(len(product_list))
+
 
 app = QtWidgets.QApplication([])
 application = mywindow()
