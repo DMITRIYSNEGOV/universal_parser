@@ -76,6 +76,9 @@ class Ui_MainWindow(object):
         self.check_is_pag = QtWidgets.QCheckBox(self.centralwidget)
         self.check_is_pag.setGeometry(QtCore.QRect(150, 310, 81, 17))
         self.check_is_pag.setObjectName("check_is_pag")
+        self.open_product_form = QtWidgets.QPushButton(self.centralwidget)
+        self.open_product_form.setGeometry(QtCore.QRect(810, 550, 111, 23))
+        self.open_product_form.setObjectName("open_product_form")
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
@@ -99,5 +102,6 @@ class Ui_MainWindow(object):
         self.radio_pag_type_parameter.setText(_translate("MainWindow", "Параметр"))
         self.radio_pag_type_path.setText(_translate("MainWindow", "Путь"))
         self.check_is_pag.setText(_translate("MainWindow", "Пагинация"))
+        self.open_product_form.setText(_translate("MainWindow", "Настроить продукт"))
 
 

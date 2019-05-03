@@ -3,7 +3,8 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView as QWebView, QWebEnginePage as QWebPage, QWebEngineSettings as QWebSettings
-from mainwindow import Ui_MainWindow  # импорт нашего сгенерированного файла
+from mainwindow import Ui_MainWindow  # импорт основной формы
+from productwindow import Ui_ProductWindow # импорт формы продукта
 import sys
 
 from fake_useragent import UserAgent
@@ -92,8 +93,17 @@ class mywindow(QtWidgets.QMainWindow):
         # наличие пагинации
         self.ui.check_is_pag.stateChanged.connect(self.is_pag)
 
-        # событие нажатия на кнопку
+        # событие нажатия на кнопку получения списков продуктов
         self.ui.get_html_button.clicked.connect(self.get_list_link)
+
+        # событие нажатия на кнопку открытия окна с настройкой продукта
+        self.ui.open_product_form.clicked.connect(self.open_product_window)
+
+    def open_product_window(self):
+        self.window = QtWidgets.QMainWindow()
+        self.ui = Ui_ProductWindow()
+        self.ui.setupUi(self.window)
+        self.window.show()
 
     def is_pag(self, state):
         if state == QtCore.Qt.Checked:

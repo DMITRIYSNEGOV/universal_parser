@@ -223,7 +223,7 @@ def get_list_link(section_url, section_tag, product_tag, product_name, product_a
                 else:
                     absolute_url = get_absolute_url(url=product["href"],
                         section_url=section_url)
-                
+
                 if(is_correct_url(absolute_url)):
                     url_product_list.append(absolute_url)
                     print(absolute_url)
@@ -254,12 +254,13 @@ def get_list_link(section_url, section_tag, product_tag, product_name, product_a
                 writer = csv.writer(csv_file)
 
                 # задаем название атрбутов
-                attr_name = ["URL", "Название"]
+                attr_name_list = ["URL", "Название"]
                 for i in range(0, len(product_attr_list)):
                     if (i%2)==0:
-                        attr_name.append(product_attr_list[i].text)
+                        attr_name_list.append(product_attr_list[i].text)
 
-                writer.writerow(attr_name)
+                writer.writerow(attr_name_list)
+
                 # задаем значения атрибутов
                 product_info = [product_url, name]
                 for i in range(0, len(product_attr_list)):
@@ -274,14 +275,14 @@ def get_list_link(section_url, section_tag, product_tag, product_name, product_a
     print(len(product_list))
 
 
-
-get_list_link(
-            pag_type = "parameter",
-            pag_name="page",
-            pag_from=1, 
-            pag_to=2,
-            section_url="http://технология35.рф/product-category/vitriny-kholodilnye-morozilnye-universalnye-konditerskie-dlia-morozhenogo-kassovye-prilavki/",
-            section_tag="""<div class="change_products sn-products-container">
+if __name__ == "__main__":
+    get_list_link(
+                pag_type = "parameter",
+                pag_name="page",
+                pag_from=1, 
+                pag_to=2,
+                section_url="http://технология35.рф/product-category/vitriny-kholodilnye-morozilnye-universalnye-konditerskie-dlia-morozhenogo-kassovye-prilavki/",
+                section_tag="""<div class="change_products sn-products-container">
 
 <div class="product-card-wide" data-product="14686">
     <a class="product-card-wide-body" href="/product/konditerskaia-kholodilnaia-vitrina-cryspi-vpv-012-08-octava-k-1200-ral-3002-168467-o-vpvk1-120g-3002/">
