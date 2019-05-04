@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>997</width>
-    <height>720</height>
+    <height>520</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,9 +19,15 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>651</width>
-      <height>21</height>
+      <width>971</width>
+      <height>31</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>10</pointsize>
+     </font>
     </property>
     <property name="placeholderText">
      <string>Страница раздела</string>
@@ -33,24 +39,36 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>330</x>
-      <y>670</y>
-      <width>111</width>
-      <height>23</height>
+      <x>370</x>
+      <y>330</y>
+      <width>341</width>
+      <height>111</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>18</pointsize>
+     </font>
+    </property>
     <property name="text">
-     <string>Получить страницу</string>
+     <string>Получать ссылки</string>
     </property>
    </widget>
    <widget class="QPlainTextEdit" name="section_tag">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>40</y>
+      <y>50</y>
       <width>341</width>
       <height>261</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>8</pointsize>
+     </font>
     </property>
     <property name="placeholderText">
      <string>Код раздела</string>
@@ -59,11 +77,17 @@
    <widget class="QPlainTextEdit" name="product_tag">
     <property name="geometry">
      <rect>
-      <x>360</x>
-      <y>40</y>
-      <width>361</width>
+      <x>370</x>
+      <y>50</y>
+      <width>341</width>
       <height>261</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>8</pointsize>
+     </font>
     </property>
     <property name="placeholderText">
      <string>Код продукта</string>
@@ -73,10 +97,15 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>310</y>
+      <y>320</y>
       <width>131</width>
       <height>121</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+     </font>
     </property>
     <property name="title">
      <string>Браузер</string>
@@ -117,7 +146,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>Edje</string>
+      <string>Edge</string>
      </property>
     </widget>
     <widget class="QRadioButton" name="radio_phantomJS">
@@ -140,10 +169,10 @@
    <widget class="QPlainTextEdit" name="url_product_list">
     <property name="geometry">
      <rect>
-      <x>740</x>
-      <y>40</y>
-      <width>241</width>
-      <height>501</height>
+      <x>730</x>
+      <y>50</y>
+      <width>251</width>
+      <height>451</height>
      </rect>
     </property>
     <property name="horizontalScrollBarPolicy">
@@ -159,11 +188,16 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>150</x>
-      <y>320</y>
+      <x>160</x>
+      <y>330</y>
       <width>191</width>
-      <height>91</height>
+      <height>111</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+     </font>
     </property>
     <property name="title">
      <string/>
@@ -171,8 +205,8 @@
     <widget class="QLineEdit" name="pag_name">
      <property name="geometry">
       <rect>
-       <x>20</x>
-       <y>60</y>
+       <x>10</x>
+       <y>70</y>
        <width>61</width>
        <height>21</height>
       </rect>
@@ -187,8 +221,8 @@
     <widget class="QLineEdit" name="pag_from">
      <property name="geometry">
       <rect>
-       <x>90</x>
-       <y>60</y>
+       <x>80</x>
+       <y>70</y>
        <width>41</width>
        <height>20</height>
       </rect>
@@ -203,8 +237,8 @@
     <widget class="QLineEdit" name="pag_to">
      <property name="geometry">
       <rect>
-       <x>140</x>
-       <y>60</y>
+       <x>130</x>
+       <y>70</y>
        <width>41</width>
        <height>20</height>
       </rect>
@@ -219,8 +253,8 @@
     <widget class="QRadioButton" name="radio_pag_type_parameter">
      <property name="geometry">
       <rect>
-       <x>20</x>
-       <y>10</y>
+       <x>10</x>
+       <y>20</y>
        <width>82</width>
        <height>17</height>
       </rect>
@@ -235,8 +269,8 @@
     <widget class="QRadioButton" name="radio_pag_type_path">
      <property name="geometry">
       <rect>
-       <x>20</x>
-       <y>30</y>
+       <x>10</x>
+       <y>40</y>
        <width>82</width>
        <height>17</height>
       </rect>
@@ -249,11 +283,16 @@
    <widget class="QCheckBox" name="check_is_pag">
     <property name="geometry">
      <rect>
-      <x>150</x>
-      <y>310</y>
+      <x>160</x>
+      <y>320</y>
       <width>81</width>
       <height>17</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+     </font>
     </property>
     <property name="text">
      <string>Пагинация</string>
@@ -262,14 +301,55 @@
    <widget class="QPushButton" name="open_product_form">
     <property name="geometry">
      <rect>
-      <x>810</x>
-      <y>550</y>
-      <width>111</width>
-      <height>23</height>
+      <x>370</x>
+      <y>450</y>
+      <width>341</width>
+      <height>51</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>14</pointsize>
+     </font>
     </property>
     <property name="text">
      <string>Настроить продукт</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>450</y>
+      <width>131</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>11</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Документация</string>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="progressBar">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>460</y>
+      <width>201</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>89</number>
+    </property>
+    <property name="format">
+     <string>%p%</string>
     </property>
    </widget>
   </widget>

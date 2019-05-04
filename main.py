@@ -27,67 +27,20 @@ from selenium.webdriver.support.ui import WebDriverWait
 import csv
 
 class ThreadClass(QThread):
-    get_list_link = pyqtSignal()
+    get_list_urls = pyqtSignal(list)
 
-    def __init__(self, parent=None):
-        super(ThreadClass,self).__init__(parent)
+    def __init__(self, section_url, section_tag, product_tag, type_browser, pag_name, pag_from, pag_to, pag_type):
+        super(ThreadClass,self).__init__()
+        self.section_url = section_url
+        self.section_tag = section_tag
+        self.product_tag = product_tag
+        self.type_browser = type_browser
+        self.pag_name = pag_name
+        self.pag_from = pag_from
+        self.pag_to = pag_to
+        self.pag_type = pag_type
 
-    def run(self):
-        self.get_list_link.emit()
-
-class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
-    def __init__(self):
-        super(mywindow, self).__init__()
-        self.setupUi(self)
-
-        # событие нажатия на кнопку получения списков продуктов
-        self.get_html_button.clicked.connect(self.start_getting_urls)
-
-        # наличие пагинации
-        self.check_is_pag.stateChanged.connect(self.is_pag)
-
-        # событие нажатия на кнопку открытия окна с настройкой продукта
-        self.open_product_form.clicked.connect(self.open_product_window)
-
-    def start_getting_urls(self):
-        self.threadclass = ThreadClass()
-        self.threadclass.start()
-        self.threadclass.get_list_link.connect(self.get_list_link)
-
-    def open_product_window(self):
-        self.window = QtWidgets.QMainWindow()
-        self = Ui_ProductWindow()
-        self.setupUi(self.window)
-        self.window.show()
-
-    def is_pag(self, state):
-        if state == QtCore.Qt.Checked:
-            self.groupBox_pag.setEnabled(True)
-        else:
-            self.groupBox_pag.setEnabled(False)
-
-    def get_list_link(self):
-        section_url = self.section_url.text()
-        section_tag = self.section_tag.toPlainText()
-        product_tag = self.product_tag.toPlainText()
-
-        if self.groupBox_pag.isEnabled():
-            pag_name = self.pag_name.text()
-            pag_from = int(self.pag_from.text())
-            pag_to = int(self.pag_to.text())
-            if self.radio_pag_type_path.isChecked():
-                pag_type = "path"
-            else:
-                pag_type = "parameter"
-
-        if self.radio_firefox32.isChecked():
-            type_browser = "firefox32"
-        elif self.radio_firefox64.isChecked():
-            type_browser = "firefox64"
-        elif self.radio_edge.isChecked():
-            type_browser = "edje"
-        else:
-            type_browser = "phantomjs"
+    def get_list_link(self, section_url, section_tag, product_tag, type_browser, pag_name, pag_from, pag_to, pag_type):
         html_code = self.get_html_code(url = section_url, type_browser = type_browser)
 
         # получить страницу раздела    
@@ -115,7 +68,8 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
         print(len(list_product))
 
         # переход на следующую страницу
-        if self.groupBox_pag.isEnabled():
+        # if self.groupBox_pag.isEnabled():
+        if (self.pag_name is not None) and (self.pag_from is not None):
             section_url = re.sub(r"(#\w*)", "", section_url)
             for i in range(pag_from, pag_to+1):
                 # ожидание 5-10 секунд
@@ -175,10 +129,14 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # вывод всех URL товаров и их количество
         url_product_list = list(set(url_product_list))
+        # возвращаем список URL`ов
+        return url_product_list
+
+
         for product_url in url_product_list:
             print(product_url)
             # вывод URL продукта в правую панель на главной странице
-            self.url_product_list.appendPlainText(product_url)   
+            # self.url_product_list.appendPlainText(product_url)   
         print(len(url_product_list))
 
         # диалоговое сообщение о завершении парсинга
@@ -338,6 +296,93 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #     print("_|_{}_|_".format(i.text))
 
         return result_list_attr
+
+
+
+    def run(self):
+        list_urls = self.get_list_link(
+            section_url = self.section_url, 
+            section_tag = self.section_tag, 
+            product_tag = self.product_tag, 
+            type_browser = self.type_browser, 
+            pag_name = self.pag_name, 
+            pag_from = self.pag_from, 
+            pag_to = self.pag_to, 
+            pag_type = self.pag_type)
+        self.get_list_urls.emit(list_urls)
+
+class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
+    def __init__(self):
+        super(mywindow, self).__init__()
+        self.setupUi(self)
+
+        # событие нажатия на кнопку получения списков продуктов
+        self.get_html_button.clicked.connect(self.start_getting_urls)
+
+        # наличие пагинации
+        self.check_is_pag.stateChanged.connect(self.is_pag)
+
+        # событие нажатия на кнопку открытия окна с настройкой продукта
+        self.open_product_form.clicked.connect(self.open_product_window)
+
+    def start_getting_urls(self):
+        section_url = self.section_url.text()
+        section_tag = self.section_tag.toPlainText()
+        product_tag = self.product_tag.toPlainText()
+
+        pag_name = None
+        pag_from = None
+        pag_to = None
+        pag_type = None
+
+        if self.groupBox_pag.isEnabled():
+            pag_name = self.pag_name.text()
+            pag_from = int(self.pag_from.text())
+            pag_to = int(self.pag_to.text())
+            if self.radio_pag_type_path.isChecked():
+                pag_type = "path"
+            else:
+                pag_type = "parameter"
+
+        if self.radio_firefox32.isChecked():
+            type_browser = "firefox32"
+        elif self.radio_firefox64.isChecked():
+            type_browser = "firefox64"
+        elif self.radio_edge.isChecked():
+            type_browser = "edje"
+        else:
+            type_browser = "phantomjs"
+
+        self.threadclass = ThreadClass(
+                                    section_url=section_url,
+                                    section_tag=section_tag,
+                                    product_tag=product_tag,
+                                    type_browser=type_browser,
+                                    pag_name=pag_name,
+                                    pag_from=pag_from,
+                                    pag_to=pag_to,
+                                    pag_type=pag_type)
+        self.threadclass.start()
+        self.threadclass.get_list_urls.connect(self.get_list_urls)
+
+    def open_product_window(self):
+        self.window = QtWidgets.QMainWindow()
+        self = Ui_ProductWindow()
+        self.setupUi(self.window)
+        self.window.show()
+
+    def is_pag(self, state):
+        if state == QtCore.Qt.Checked:
+            self.groupBox_pag.setEnabled(True)
+        else:
+            self.groupBox_pag.setEnabled(False)
+
+    def get_list_urls(self, list_urls):
+        for product_url in list_urls:
+            print(product_url)
+            # вывод URL продукта в правую панель на главной странице
+            self.url_product_list.appendPlainText(product_url)
+
 
 app = QtWidgets.QApplication([])
 application = mywindow()
