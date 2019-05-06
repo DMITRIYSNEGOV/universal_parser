@@ -118,8 +118,8 @@ class ThreadClass(QThread):
                             absolute_url = self.get_absolute_url(url=product["href"],
                                 section_url=section_url)
 
-                        if(self.is_correct_url(absolute_url)):
-                            url_product_list.append(absolute_url)
+                        if(self.is_correct_url(absolute_url)) and (absolute_url not in url_product_list):
+                            # url_product_list.append(absolute_url)
                             print(absolute_url)
                     except Exception as e:
                         print(e)
@@ -129,9 +129,6 @@ class ThreadClass(QThread):
 
         # вывод всех URL товаров и их количество
         url_product_list = list(set(url_product_list))
-        # возвращаем список URL`ов
-        return url_product_list
-
 
         for product_url in url_product_list:
             print(product_url)
@@ -139,12 +136,11 @@ class ThreadClass(QThread):
             # self.url_product_list.appendPlainText(product_url)   
         print(len(url_product_list))
 
-        # диалоговое сообщение о завершении парсинга
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-        msg.setWindowTitle("Успешно")
-        msg.setText("Получены {} ссылок на товары".format(len(url_product_list)))
-        msg.exec();
+        # возвращаем список URL`ов
+        return url_product_list
+
+
+
 
 
 
@@ -315,6 +311,9 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super(mywindow, self).__init__()
         self.setupUi(self)
+        # установка фиксированного окна
+        self.setWindowFlags(QtCore.Qt.MSWindowsFixedSizeDialogHint)
+        
 
         # событие нажатия на кнопку получения списков продуктов
         self.get_html_button.clicked.connect(self.start_getting_urls)
@@ -366,9 +365,7 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.threadclass.get_list_urls.connect(self.get_list_urls)
 
     def open_product_window(self):
-        self.window = QtWidgets.QMainWindow()
-        self = Ui_ProductWindow()
-        self.setupUi(self.window)
+        self.window = productwindow("Hello")
         self.window.show()
 
     def is_pag(self, state):
@@ -378,14 +375,32 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.groupBox_pag.setEnabled(False)
 
     def get_list_urls(self, list_urls):
+        # диалоговое сообщение о завершении парсинга
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Успешно")
+        msg.setText("Получены {} ссылок на товары".format(len(list_urls)))
+        msg.exec();
+        
         for product_url in list_urls:
             print(product_url)
             # вывод URL продукта в правую панель на главной странице
-            self.url_product_list.appendPlainText(product_url)
+            row = self.url_product_list.rowCount()
+            self.url_product_list.setRowCount(row+1)
+            self.url_product_list.setItem(row, 0, QTableWidgetItem(product_url))
 
+class productwindow(QWidget, Ui_ProductWindow):
+    def __init__(self, list_urls):
+        super(productwindow, self).__init__()    
+        self.setupUi(self)
+        self.list_urls = list_urls
+        self.add_text(self.list_urls)
+
+    def add_text(self, text):
+        self.ProductTextEdit.appendPlainText(text)
 
 app = QtWidgets.QApplication([])
 application = mywindow()
 application.show()
- 
+application.setWindowIcon(QtGui.QIcon("icon.png"))
 sys.exit(app.exec())
