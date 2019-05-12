@@ -5,6 +5,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView as QWebView, QWebEnginePage as QWebPage, QWebEngineSettings as QWebSettings
 from mainwindow import Ui_MainWindow  # импорт основной формы
 from productwindow import Ui_ProductWindow # импорт формы продукта
+from parsedwindow import Ui_ParsedWindow # импорт итоговой формы
 import sys
 
 from fake_useragent import UserAgent
@@ -26,11 +27,108 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 import csv
 
-class ThreadClass(QThread):
+class Parser():
+    def init_driver(self, type_browser = "firefox64"):
+        try:
+            if(type_browser == "firefox32"):
+                options = webdriver.firefox.options.Options()
+                options.add_argument('-headless')
+                driver = webdriver.Firefox(service_log_path='NUL', options=options, 
+                    executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\Firefox32\\geckodriver.exe"))
+            elif(type_browser == "firefox64"):
+                options = webdriver.firefox.options.Options()
+                options.add_argument('-headless')
+                driver = webdriver.Firefox(service_log_path='NUL', options=options, 
+                    executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\Firefox64\\geckodriver.exe"))
+            elif(type_browser == "edje"):
+                driver = webdriver.Edge(os.path.join(os.path.abspath(os.curdir),"drivers\\MicrosoftWebDriver.exe"))
+            else:
+                driver = webdriver.PhantomJS(os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"))
+        except Exception as e:
+            print(e)
+            driver = webdriver.PhantomJS(os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"))
+        driver.wait = WebDriverWait(driver, 60)
+        return driver
+
+    def wait_for_ajax(self, driver):
+        wait = WebDriverWait(driver, 15)
+        try:
+            wait.until(lambda driver: driver.execute_script('return jQuery.active') == 0)
+            wait.until(lambda driver: driver.execute_script('return document.readyState') == 'complete')
+        except Exception as e:
+            print(e)
+            pass
+
+    def get_html_code(self, url, type_browser):
+        try:
+            driver = self.init_driver(type_browser)
+            driver.get(url)
+            self.wait_for_ajax(driver)
+            html_code = driver.page_source
+        finally:
+            driver.close()
+        return html_code
+
+
+    def get_product_name(self, html_code, product_name):
+        soup_product_name = bs(product_name, "html.parser")
+
+        soup_product = bs(html_code, "html.parser")
+        product_name_value = soup_product.find(soup_product_name.find().name,
+         attrs=soup_product_name.find().attrs).text
+        return product_name_value
+
+
+    def get_list_attrs(self, html_code, html_attr):
+        # создаем объекты для парсинга
+        soup_product = bs(html_code, "html.parser")
+        html_attr = bs(html_attr, "html.parser")
+        # находим атрибуты на странице товара
+        html_attr = soup_product.find(html_attr.find().name,
+            attrs=html_attr.find().attrs)
+
+        # удаляем тэги <br>
+        for linebreak in html_attr.find_all('br'):
+            linebreak.extract()
+
+        list_attrs = []
+
+        html_list = html_attr.find_all(text=False, recursive=True)
+        for i in html_list:
+            # поиск внутреннего тега
+            while(i.findChildren() != []):
+                i= i.findChildren()[0]
+            list_attrs.append(i)
+
+            # print("_|_{}_|_".format(i))
+            # print("")
+
+        result_list_attr = []
+        # извлекаем уникальные теги
+        for i in range(0, len(list_attrs)-1):
+            if(list_attrs[i]==list_attrs[i+1]):
+                continue
+            # print(list_attrs[i])
+            result_list_attr.append(list_attrs[i])
+        # добавляем последний уникальный элемент
+
+        if(result_list_attr == []):
+            result_list_attr.append(html_attr)
+        elif(result_list_attr[-1] != list_attrs[-1]):
+            result_list_attr.append(list_attrs[-1])
+        # вывод уникальных тегов с контентом
+        # for i in result_list_attr:
+        #     print("_|_{}_|_".format(i.text))
+
+        return result_list_attr
+
+
+
+class MainThreadClass(QThread, Parser):
     get_list_urls = pyqtSignal(list)
 
     def __init__(self, section_url, section_tag, product_tag, type_browser, pag_name, pag_from, pag_to, pag_type):
-        super(ThreadClass,self).__init__()
+        super(MainThreadClass,self).__init__()
         self.section_url = section_url
         self.section_tag = section_tag
         self.product_tag = product_tag
@@ -141,46 +239,6 @@ class ThreadClass(QThread):
 
 
 
-
-
-
-        # вывод названий и атрибутов продуктов
-        # product_list = []
-        # for product_url in url_product_list:
-        #     try:
-        #         html_code = self.get_html_code(url = product_url, type_browser = type_browser)
-        #         name = self.get_product_name(html_code, product_name)
-
-        #         product_attr_list = self.get_list_attrs(html_code, product_attr)
-        #         product_list.append({"name": name})
-        #         print(name)
-        #         # записывание атрибутов в csv файл
-        #         with open("test.csv", "a", newline='') as csv_file:
-        #             writer = csv.writer(csv_file)
-
-        #             # задаем название атрбутов
-        #             attr_name_list = ["URL", "Название"]
-        #             for i in range(0, len(product_attr_list)):
-        #                 if (i%2)==0:
-        #                     attr_name_list.append(product_attr_list[i].text)
-
-        #             writer.writerow(attr_name_list)
-
-        #             # задаем значения атрибутов
-        #             product_info = [product_url, name]
-        #             for i in range(0, len(product_attr_list)):
-        #                 if(i%2 != 0):
-        #                     print(product_attr_list[i].text)
-        #                     product_info.append(product_attr_list[i].text)
-        #             writer.writerow(product_info)
-        #         print("\n\n")
-        #     except Exception as e:
-        #         print(e)
-        #         print("{} ERROR".format(product_url))
-        # print(len(product_list))
-
-
-
     def _remove_attrs(self, soup):
         [s.extract() for s in soup('script')]
         for tag in soup.findAll(True): 
@@ -195,46 +253,7 @@ class ThreadClass(QThread):
         else:
             return "{}/{}".format(re.match(r"^(https|http):\/\/[^\?]*", section_url).group(0), url)
 
-    def init_driver(self, type_browser = "firefox64"):
-        try:
-            if(type_browser == "firefox32"):
-                options = webdriver.firefox.options.Options()
-                options.add_argument('-headless')
-                driver = webdriver.Firefox(service_log_path='NUL', options=options, 
-                    executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\Firefox32\\geckodriver.exe"))
-            elif(type_browser == "firefox64"):
-                options = webdriver.firefox.options.Options()
-                options.add_argument('-headless')
-                driver = webdriver.Firefox(service_log_path='NUL', options=options, 
-                    executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\Firefox64\\geckodriver.exe"))
-            elif(type_browser == "edje"):
-                driver = webdriver.Edge(os.path.join(os.path.abspath(os.curdir),"drivers\\MicrosoftWebDriver.exe"))
-            else:
-                driver = webdriver.PhantomJS(os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"))
-        except Exception as e:
-            print(e)
-            driver = webdriver.PhantomJS(os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"))
-        driver.wait = WebDriverWait(driver, 60)
-        return driver
 
-    def wait_for_ajax(self, driver):
-        wait = WebDriverWait(driver, 15)
-        try:
-            wait.until(lambda driver: driver.execute_script('return jQuery.active') == 0)
-            wait.until(lambda driver: driver.execute_script('return document.readyState') == 'complete')
-        except Exception as e:
-            print(e)
-            pass
-
-    def get_html_code(self, url, type_browser):
-        try:
-            driver = self.init_driver(type_browser)
-            driver.get(url)
-            self.wait_for_ajax(driver)
-            html_code = driver.page_source
-        finally:
-            driver.close()
-        return html_code
 
     def get_new_pag_url(self, section_url, params):
         req = PreparedRequest()
@@ -247,51 +266,6 @@ class ThreadClass(QThread):
         else:
             return True
 
-    def get_product_name(sefl, html_code, product_name):
-            soup_product_name = bs(product_name, "html.parser")
-
-            soup_product = bs(html_code, "html.parser")
-            product_name_value = soup_product.find(soup_product_name.find().name,
-             attrs=soup_product_name.find().attrs).text
-            return product_name_value
-
-    def get_list_attrs(sefl, html_code, html_attr):
-        # создаем объекты для парсинга
-        soup_product = bs(html_code, "html.parser")
-        html_attr = bs(html_attr, "html.parser")
-        # находим атрибуты на странице товара
-        html_attr = soup_product.find(html_attr.find().name,
-            attrs=html_attr.find().attrs)
-
-        list_attrs = []
-
-        html_list = html_attr.find_all(text=False, recursive=True)
-        for i in html_list:
-            # поиск внутреннего тега
-            while(i.findChildren() != []):
-                i= i.findChildren()[0]
-            list_attrs.append(i)
-            # print("_|_{}_|_".format(i))
-            # print("")
-
-        result_list_attr = []
-        # извлекаем уникальные теги
-        for i in range(0, len(list_attrs)-1):
-            if(list_attrs[i]==list_attrs[i+1]):
-                continue
-            # print(list_attrs[i])
-            result_list_attr.append(list_attrs[i])
-        # добавляем последний уникальный элемент
-
-        if(result_list_attr == []):
-            result_list_attr.append(html_attr)
-        elif(result_list_attr[-1] != list_attrs[-1]):
-            result_list_attr.append(list_attrs[-1])
-        # вывод уникальных тегов с контентом
-        # for i in result_list_attr:
-        #     print("_|_{}_|_".format(i.text))
-
-        return result_list_attr
 
 
 
@@ -307,7 +281,7 @@ class ThreadClass(QThread):
             pag_type = self.pag_type)
         self.get_list_urls.emit(list_urls)
 
-class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
+class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
     def __init__(self):
         super(mywindow, self).__init__()
         self.setupUi(self)
@@ -352,7 +326,7 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             type_browser = "phantomjs"
 
-        self.threadclass = ThreadClass(
+        self.MainThreadClass = MainThreadClass(
                                     section_url=section_url,
                                     section_tag=section_tag,
                                     product_tag=product_tag,
@@ -361,11 +335,26 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                     pag_from=pag_from,
                                     pag_to=pag_to,
                                     pag_type=pag_type)
-        self.threadclass.start()
-        self.threadclass.get_list_urls.connect(self.get_list_urls)
+        self.MainThreadClass.start()
+        self.MainThreadClass.get_list_urls.connect(self.get_list_urls)
 
     def open_product_window(self):
-        self.window = productwindow("Hello")
+        list_product_urls = []
+        for i in range(self.url_product_list.rowCount()):
+            if self.url_product_list.item(i, 0).text() != "":
+                list_product_urls.append(self.url_product_list.item(i, 0).text())
+
+
+        if self.radio_firefox32.isChecked():
+            type_browser = "firefox32"
+        elif self.radio_firefox64.isChecked():
+            type_browser = "firefox64"
+        elif self.radio_edge.isChecked():
+            type_browser = "edje"
+        else:
+            type_browser = "phantomjs"
+
+        self.window = productwindow(list_product_urls, type_browser)
         self.window.show()
 
     def is_pag(self, state):
@@ -389,15 +378,147 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.url_product_list.setRowCount(row+1)
             self.url_product_list.setItem(row, 0, QTableWidgetItem(product_url))
 
-class productwindow(QWidget, Ui_ProductWindow):
-    def __init__(self, list_urls):
+class productwindow(QWidget, Ui_ProductWindow, Parser):
+    def __init__(self, list_product_urls, type_browser):
         super(productwindow, self).__init__()    
         self.setupUi(self)
-        self.list_urls = list_urls
-        self.add_text(self.list_urls)
 
-    def add_text(self, text):
-        self.ProductTextEdit.appendPlainText(text)
+        group = QtWidgets.QGroupBox()
+        with_name = QtWidgets.QRadioButton("С названием атрибутов")
+        without_name = QtWidgets.QRadioButton("Только значения атрибутов")
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(with_name)
+        vbox.addWidget(without_name)
+        vbox.addWidget(QtWidgets.QLineEdit())
+        vbox.addStretch(1)
+        group.setLayout(vbox)
+        self.attr_product_list.setCellWidget(0, 1, group)
+
+        self.type_browser = type_browser
+        self.list_product_urls = list_product_urls
+
+        # обработчик кнопки "добавить ячейку"
+        self.add_row_button.clicked.connect(self.add_row)
+
+        # обработчик кнопки "получать товары"
+        self.get_products_button.clicked.connect(self.open_result_window)
+
+    def add_row(self):
+        row = self.attr_product_list.rowCount()
+        self.attr_product_list.setRowCount(row + 1)
+        group = QtWidgets.QGroupBox()
+        with_name = QtWidgets.QRadioButton("С названием атрибутов")
+        without_name = QtWidgets.QRadioButton("Только значения атрибутов")
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(with_name)
+        vbox.addWidget(without_name)
+        vbox.addWidget(QtWidgets.QLineEdit())
+        vbox.addStretch(1)
+        group.setLayout(vbox)
+        self.attr_product_list.setCellWidget(row, 1, group)
+
+    def open_result_window(self):
+        # запоминаем все названия и значения атрибутов в виде списка
+        # [(key1, value1), (key2, value2), (key3, value3)]
+        row = self.attr_product_list.rowCount()
+        product_attr_with_params_list = []
+        for i in range(row):
+            html_attr = self.attr_product_list.item(i, 0).text()
+            if self.attr_product_list.cellWidget(i,1).findChildren(QtWidgets.QRadioButton)[0].isChecked():
+                param_attr = "with_name"
+            else:
+                param_attr = self.attr_product_list.cellWidget(i,1).findChildren(QtWidgets.QLineEdit)[0].text()
+
+            product_attr_with_params_list.append( (html_attr, param_attr) )
+
+        self.window = parsedwindow(
+            list_product_urls=self.list_product_urls,
+            product_attr_with_params_list=product_attr_with_params_list, 
+            type_browser=self.type_browser)
+        self.window.show()
+
+
+class parsedwindow(QWidget, Ui_ParsedWindow, Parser):
+    def __init__(self, 
+                list_product_urls,
+                product_attr_with_params_list, 
+                type_browser):
+        super(parsedwindow, self).__init__()    
+        self.setupUi(self)
+        self.list_product_urls = list_product_urls
+        self.product_attr_with_params_list = product_attr_with_params_list
+        self.type_browser = type_browser
+
+        self.get_table(list_product_urls, product_attr_with_params_list, type_browser)
+
+
+    def get_table(self, list_product_urls, product_attr_with_params_list, type_browser):
+        
+    ##############################################################
+    ##############################################################
+    ##############################################################
+    ##############################################################
+        self.result_product_list.setColumnCount(99)
+    ##############################################################
+    ##############################################################
+    ##############################################################
+    ##############################################################
+
+
+
+        # вывод названий и атрибутов продуктов
+        for product_url in list_product_urls:
+            try:
+                html_code = self.get_html_code(product_url, type_browser)
+                # name = self.get_product_name(html_code, product_name)
+
+                row = self.result_product_list.rowCount()
+                attr_name_list = ["URL"]
+                product_info = [product_url]
+                for product_attr in product_attr_with_params_list:
+                    product_attr_list = self.get_list_attrs(html_code, product_attr[0])
+
+                    # задаем название атрбутов   
+                    for i in range(0, len(product_attr_list)):
+                        if(product_attr[1] == "with_name"):
+                            if (i%2)==0:
+                                attr_name_list.append(product_attr_list[i].text)
+                        else:
+                            attr_name_list.append(product_attr[1])
+                    print(attr_name_list)
+                    
+
+                # вывод названия атрибутов в таблицу
+                for i in range(0, len(attr_name_list)):
+                    self.result_product_list.setRowCount(row+1)
+                    
+                    self.result_product_list.setItem(row, i, QTableWidgetItem(attr_name_list[i]))
+
+                # задаем значения атрибутов             
+                for i in range(0, len(product_attr_list)):
+                    if(product_attr[1] == "with_name"):
+                        if(i%2 != 0):
+                            print(product_attr_list[i].text)
+                            product_info.append(product_attr_list[i].text)
+                    else:
+                        print(product_attr_list[i].text)
+                        product_info.append(product_attr_list[i].text)
+
+                # выводим значения атрибутов
+                for i in range(0, len(product_info)):
+                    self.result_product_list.setRowCount(row+2)
+                    # self.result_product_list.setColumnCount(i+1)
+                    self.result_product_list.setItem(row+1, i, QTableWidgetItem(product_info[i]))
+
+            except Exception as e:
+                print(e)
+                print("{} ERROR".format(product_url))
+
+
+
+
 
 app = QtWidgets.QApplication([])
 application = mywindow()

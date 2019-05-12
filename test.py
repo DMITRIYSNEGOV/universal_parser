@@ -107,6 +107,10 @@ def get_list_attrs(html_code, html_attr):
     html_attr = soup_product.find(html_attr.find().name,
         attrs=html_attr.find().attrs)
 
+    # удаляем тэги <br>
+    for linebreak in html_attr.find_all('br'):
+        linebreak.extract()
+
     list_attrs = []
 
     html_list = html_attr.find_all(text=False, recursive=True)
@@ -115,6 +119,7 @@ def get_list_attrs(html_code, html_attr):
         while(i.findChildren() != []):
             i= i.findChildren()[0]
         list_attrs.append(i)
+
         # print("_|_{}_|_".format(i))
         # print("")
 
@@ -275,7 +280,15 @@ def get_list_link(section_url, section_tag, product_tag, product_name, product_a
     print(len(product_list))
 
 
+
 if __name__ == "__main__":
+    html_code = get_html_code("http://технология35.рф/product/vesy-dlia-prostogo-vzveshivaniia-cas-swii-02-p-44146-vesy-swii-02-p/")
+    
+    r = get_list_attrs(html_code, """<span class="product-form__vendor-code"> Артикул: 44146</span>""")
+    print(r)
+    raise
+    
+
     get_list_link(
                 pag_type = "parameter",
                 pag_name="page",
