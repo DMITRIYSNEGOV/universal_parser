@@ -33,6 +33,12 @@
      <pointsize>8</pointsize>
     </font>
    </property>
+   <property name="horizontalScrollBarPolicy">
+    <enum>Qt::ScrollBarAlwaysOff</enum>
+   </property>
+   <property name="wordWrap">
+    <bool>false</bool>
+   </property>
    <property name="rowCount">
     <number>1</number>
    </property>

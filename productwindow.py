@@ -22,6 +22,8 @@ class Ui_ProductWindow(object):
         font.setFamily("Arial")
         font.setPointSize(8)
         self.attr_product_list.setFont(font)
+        self.attr_product_list.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.attr_product_list.setWordWrap(False)
         self.attr_product_list.setRowCount(1)
         self.attr_product_list.setColumnCount(2)
         self.attr_product_list.setObjectName("attr_product_list")

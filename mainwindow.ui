@@ -35,7 +35,7 @@
    </widget>
    <widget class="QPushButton" name="get_html_button">
     <property name="enabled">
-     <bool>true</bool>
+     <bool>false</bool>
     </property>
     <property name="geometry">
      <rect>
@@ -110,7 +110,7 @@
     <property name="title">
      <string>Браузер</string>
     </property>
-    <widget class="QRadioButton" name="radio_firefox32">
+    <widget class="QRadioButton" name="radio_firefox">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -120,20 +120,20 @@
       </rect>
      </property>
      <property name="text">
-      <string>FireFox(x32)</string>
+      <string>FireFox</string>
      </property>
     </widget>
-    <widget class="QRadioButton" name="radio_firefox64">
+    <widget class="QRadioButton" name="radio_chrome">
      <property name="geometry">
       <rect>
        <x>10</x>
        <y>40</y>
-       <width>82</width>
+       <width>111</width>
        <height>17</height>
       </rect>
      </property>
      <property name="text">
-      <string>FireFox(x64)</string>
+      <string>Google Chrome</string>
      </property>
     </widget>
     <widget class="QRadioButton" name="radio_edge">
@@ -283,6 +283,9 @@
     </property>
    </widget>
    <widget class="QPushButton" name="open_product_form">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>370</x>
@@ -301,7 +304,7 @@
      <string>Настроить продукт</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="open_doc_button">
     <property name="geometry">
      <rect>
       <x>10</x>

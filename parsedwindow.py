@@ -18,18 +18,19 @@ class Ui_ParsedWindow(object):
         ParsedWindow.setFont(font)
         self.result_product_list = QtWidgets.QTableWidget(ParsedWindow)
         self.result_product_list.setGeometry(QtCore.QRect(10, 10, 961, 451))
+        self.result_product_list.setWordWrap(False)
         self.result_product_list.setRowCount(0)
         self.result_product_list.setColumnCount(0)
         self.result_product_list.setObjectName("result_product_list")
         self.result_product_list.horizontalHeader().setVisible(False)
         self.result_product_list.horizontalHeader().setHighlightSections(True)
         self.result_product_list.verticalHeader().setVisible(False)
-        self.pushButton = QtWidgets.QPushButton(ParsedWindow)
-        self.pushButton.setGeometry(QtCore.QRect(320, 470, 331, 31))
+        self.save_2_csv_button = QtWidgets.QPushButton(ParsedWindow)
+        self.save_2_csv_button.setGeometry(QtCore.QRect(320, 470, 331, 31))
         font = QtGui.QFont()
         font.setPointSize(16)
-        self.pushButton.setFont(font)
-        self.pushButton.setObjectName("pushButton")
+        self.save_2_csv_button.setFont(font)
+        self.save_2_csv_button.setObjectName("save_2_csv_button")
 
         self.retranslateUi(ParsedWindow)
         QtCore.QMetaObject.connectSlotsByName(ParsedWindow)
@@ -37,6 +38,6 @@ class Ui_ParsedWindow(object):
     def retranslateUi(self, ParsedWindow):
         _translate = QtCore.QCoreApplication.translate
         ParsedWindow.setWindowTitle(_translate("ParsedWindow", "Универсальный парсер"))
-        self.pushButton.setText(_translate("ParsedWindow", "Сохранить в CSV"))
+        self.save_2_csv_button.setText(_translate("ParsedWindow", "Сохранить в CSV"))
 
 

@@ -6,13 +6,14 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView as QWebView, QWebEnginePage 
 from mainwindow import Ui_MainWindow  # импорт основной формы
 from productwindow import Ui_ProductWindow # импорт формы продукта
 from parsedwindow import Ui_ParsedWindow # импорт итоговой формы
-import sys
 
 from fake_useragent import UserAgent
 from requests_html import HTMLSession
 # import requests
 from bs4 import BeautifulSoup as bs
 
+import platform
+import sys
 import os
 import re
 from random import randint
@@ -30,23 +31,26 @@ import csv
 class Parser():
     def init_driver(self, type_browser = "firefox64"):
         try:
-            if(type_browser == "firefox32"):
-                options = webdriver.firefox.options.Options()
-                options.add_argument('-headless')
-                driver = webdriver.Firefox(service_log_path='NUL', options=options, 
-                    executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\Firefox32\\geckodriver.exe"))
-            elif(type_browser == "firefox64"):
+            if(platform.machine().endswith('64') and type_browser == "firefox"):
                 options = webdriver.firefox.options.Options()
                 options.add_argument('-headless')
                 driver = webdriver.Firefox(service_log_path='NUL', options=options, 
                     executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\Firefox64\\geckodriver.exe"))
+            elif(platform.machine().endswith('32') and type_browser == "firefox"):
+                options = webdriver.firefox.options.Options()
+                options.add_argument('-headless')
+                driver = webdriver.Firefox(service_log_path='NUL', options=options, 
+                    executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\Firefox32\\geckodriver.exe"))                
             elif(type_browser == "edje"):
-                driver = webdriver.Edge(os.path.join(os.path.abspath(os.curdir),"drivers\\MicrosoftWebDriver.exe"))
+                driver = webdriver.Edge(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\MicrosoftWebDriver.exe"))
+            elif(type_browser == "chrome"):
+                driver = webdriver.Chrome(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\chromedriver.exe"))
             else:
-                driver = webdriver.PhantomJS(os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"))
+                driver = webdriver.Ie(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\IEDriverServer.exe"))
         except Exception as e:
             print(e)
-            driver = webdriver.PhantomJS(os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"))
+            driver = webdriver.Ie(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\IEDriverServer.exe"))
+            # driver = webdriver.PhantomJS(os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"))
         driver.wait = WebDriverWait(driver, 60)
         return driver
 
@@ -217,7 +221,7 @@ class MainThreadClass(QThread, Parser):
                                 section_url=section_url)
 
                         if(self.is_correct_url(absolute_url)) and (absolute_url not in url_product_list):
-                            # url_product_list.append(absolute_url)
+                            url_product_list.append(absolute_url)
                             print(absolute_url)
                     except Exception as e:
                         print(e)
@@ -288,7 +292,6 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
         # установка фиксированного окна
         self.setWindowFlags(QtCore.Qt.MSWindowsFixedSizeDialogHint)
         
-
         # событие нажатия на кнопку получения списков продуктов
         self.get_html_button.clicked.connect(self.start_getting_urls)
 
@@ -298,7 +301,20 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
         # событие нажатия на кнопку открытия окна с настройкой продукта
         self.open_product_form.clicked.connect(self.open_product_window)
 
+        # событие проверки доступности нажатия кнопки "Получить ссылки" при вводе
+        self.section_url.textChanged.connect(self.validate_input)
+        self.section_tag.textChanged.connect(self.validate_input)
+        self.product_tag.textChanged.connect(self.validate_input)
+
+    def validate_input(self):
+        if(self.section_url.text() != "" and self.section_tag.toPlainText() != "" and self.product_tag.toPlainText() != ""):
+            self.get_html_button.setEnabled(True)
+        else:
+            self.get_html_button.setEnabled(False)
+
     def start_getting_urls(self):
+        self.url_product_list.setRowCount(0)
+
         section_url = self.section_url.text()
         section_tag = self.section_tag.toPlainText()
         product_tag = self.product_tag.toPlainText()
@@ -317,10 +333,10 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
             else:
                 pag_type = "parameter"
 
-        if self.radio_firefox32.isChecked():
-            type_browser = "firefox32"
-        elif self.radio_firefox64.isChecked():
-            type_browser = "firefox64"
+        if self.radio_firefox.isChecked():
+            type_browser = "firefox"
+        elif self.radio_chrome.isChecked():
+            type_browser = "chrome"
         elif self.radio_edge.isChecked():
             type_browser = "edje"
         else:
@@ -341,14 +357,14 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
     def open_product_window(self):
         list_product_urls = []
         for i in range(self.url_product_list.rowCount()):
-            if self.url_product_list.item(i, 0).text() != "":
-                list_product_urls.append(self.url_product_list.item(i, 0).text())
+            if hasattr(self.url_product_list.item(i, 0), 'text'):
+                if self.url_product_list.item(i, 0).text() != "":
+                    list_product_urls.append(self.url_product_list.item(i, 0).text())
 
-
-        if self.radio_firefox32.isChecked():
-            type_browser = "firefox32"
-        elif self.radio_firefox64.isChecked():
-            type_browser = "firefox64"
+        if self.radio_firefox.isChecked():
+            type_browser = "firefox"
+        elif self.radio_chrome.isChecked():
+            type_browser = "chrome"
         elif self.radio_edge.isChecked():
             type_browser = "edje"
         else:
@@ -378,11 +394,19 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
             self.url_product_list.setRowCount(row+1)
             self.url_product_list.setItem(row, 0, QTableWidgetItem(product_url))
 
+        # включаем кнопку "Настроить продукт"
+        self.open_product_form.setEnabled(True)
 class productwindow(QWidget, Ui_ProductWindow, Parser):
     def __init__(self, list_product_urls, type_browser):
         super(productwindow, self).__init__()    
         self.setupUi(self)
+        self.setWindowFlags(QtCore.Qt.MSWindowsFixedSizeDialogHint)
+        self.setWindowIcon(QtGui.QIcon("icon.png"))
 
+        # добавление в первую строку поля для ввода текста
+        self.attr_product_list.setCellWidget(0, 0, QtWidgets.QPlainTextEdit())
+
+        # добавление в первую строку радио кнопки
         group = QtWidgets.QGroupBox()
         with_name = QtWidgets.QRadioButton("С названием атрибутов")
         without_name = QtWidgets.QRadioButton("Только значения атрибутов")
@@ -390,10 +414,17 @@ class productwindow(QWidget, Ui_ProductWindow, Parser):
         vbox = QVBoxLayout()
         vbox.addWidget(with_name)
         vbox.addWidget(without_name)
-        vbox.addWidget(QtWidgets.QLineEdit())
+
+        line_attr_name = QtWidgets.QLineEdit()
+        line_attr_name.setFixedWidth(350)
+        line_attr_name.setFont(QtGui.QFont("Arial", 10))
+        line_attr_name.setPlaceholderText("Название атрибута")
+
+        vbox.addWidget(line_attr_name)
         vbox.addStretch(1)
         group.setLayout(vbox)
         self.attr_product_list.setCellWidget(0, 1, group)
+
 
         self.type_browser = type_browser
         self.list_product_urls = list_product_urls
@@ -407,6 +438,9 @@ class productwindow(QWidget, Ui_ProductWindow, Parser):
     def add_row(self):
         row = self.attr_product_list.rowCount()
         self.attr_product_list.setRowCount(row + 1)
+        
+        self.attr_product_list.setCellWidget(row, 0, QtWidgets.QPlainTextEdit())
+        
         group = QtWidgets.QGroupBox()
         with_name = QtWidgets.QRadioButton("С названием атрибутов")
         without_name = QtWidgets.QRadioButton("Только значения атрибутов")
@@ -414,10 +448,17 @@ class productwindow(QWidget, Ui_ProductWindow, Parser):
         vbox = QVBoxLayout()
         vbox.addWidget(with_name)
         vbox.addWidget(without_name)
-        vbox.addWidget(QtWidgets.QLineEdit())
+
+        line_attr_name = QtWidgets.QLineEdit()
+        line_attr_name.setFixedWidth(350)
+        line_attr_name.setFont(QtGui.QFont("Arial", 10))
+        line_attr_name.setPlaceholderText("Название атрибута")
+
+        vbox.addWidget(line_attr_name)
         vbox.addStretch(1)
         group.setLayout(vbox)
         self.attr_product_list.setCellWidget(row, 1, group)
+
 
     def open_result_window(self):
         # запоминаем все названия и значения атрибутов в виде списка
@@ -425,7 +466,7 @@ class productwindow(QWidget, Ui_ProductWindow, Parser):
         row = self.attr_product_list.rowCount()
         product_attr_with_params_list = []
         for i in range(row):
-            html_attr = self.attr_product_list.item(i, 0).text()
+            html_attr = self.attr_product_list.cellWidget(i,0).toPlainText()
             if self.attr_product_list.cellWidget(i,1).findChildren(QtWidgets.QRadioButton)[0].isChecked():
                 param_attr = "with_name"
             else:
@@ -447,12 +488,16 @@ class parsedwindow(QWidget, Ui_ParsedWindow, Parser):
                 type_browser):
         super(parsedwindow, self).__init__()    
         self.setupUi(self)
+        self.setWindowFlags(QtCore.Qt.MSWindowsFixedSizeDialogHint)
+        self.setWindowIcon(QtGui.QIcon("icon.png"))
+
         self.list_product_urls = list_product_urls
         self.product_attr_with_params_list = product_attr_with_params_list
         self.type_browser = type_browser
 
         self.get_table(list_product_urls, product_attr_with_params_list, type_browser)
 
+        self.save_2_csv_button.clicked.connect(self.save_to_csv)
 
     def get_table(self, list_product_urls, product_attr_with_params_list, type_browser):
         
@@ -480,7 +525,7 @@ class parsedwindow(QWidget, Ui_ParsedWindow, Parser):
                 for product_attr in product_attr_with_params_list:
                     product_attr_list = self.get_list_attrs(html_code, product_attr[0])
 
-                    # задаем название атрбутов   
+                    # задаем название атрибутов   
                     for i in range(0, len(product_attr_list)):
                         if(product_attr[1] == "with_name"):
                             if (i%2)==0:
@@ -496,25 +541,44 @@ class parsedwindow(QWidget, Ui_ParsedWindow, Parser):
                     
                     self.result_product_list.setItem(row, i, QTableWidgetItem(attr_name_list[i]))
 
-                # задаем значения атрибутов             
-                for i in range(0, len(product_attr_list)):
-                    if(product_attr[1] == "with_name"):
-                        if(i%2 != 0):
+                for product_attr in product_attr_with_params_list:
+                    product_attr_list = self.get_list_attrs(html_code, product_attr[0])
+                    # задаем значения атрибутов             
+                    for i in range(0, len(product_attr_list)):
+                        if(product_attr[1] == "with_name"):
+                            if(i%2 != 0):
+                                print(product_attr_list[i].text)
+                                product_info.append(product_attr_list[i].text)
+                        else:
                             print(product_attr_list[i].text)
                             product_info.append(product_attr_list[i].text)
-                    else:
-                        print(product_attr_list[i].text)
-                        product_info.append(product_attr_list[i].text)
 
-                # выводим значения атрибутов
-                for i in range(0, len(product_info)):
-                    self.result_product_list.setRowCount(row+2)
-                    # self.result_product_list.setColumnCount(i+1)
-                    self.result_product_list.setItem(row+1, i, QTableWidgetItem(product_info[i]))
+                    # выводим значения атрибутов
+                    for i in range(0, len(product_info)):
+                        self.result_product_list.setRowCount(row+2)
+                        # self.result_product_list.setColumnCount(i+1)
+                        self.result_product_list.setItem(row+1, i, QTableWidgetItem(product_info[i]))
 
             except Exception as e:
                 print(e)
                 print("{} ERROR".format(product_url))
+
+
+    def save_to_csv(self):
+        # записывание атрибутов в csv файл
+        with open("test.csv", "a", newline='') as csv_file:
+            writer = csv.writer(csv_file)
+
+            row = self.result_product_list.rowCount()
+            col = self.result_product_list.columnCount()
+            for i in range(row):
+                row_attr_list = []
+                for j in range(col):
+                    if hasattr(self.result_product_list.item(i, j), 'text'):
+                        row_attr_list.append(self.result_product_list.item(i, j).text())
+
+                writer.writerow(row_attr_list)
+                
 
 
 

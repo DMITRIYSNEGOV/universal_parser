@@ -27,6 +27,9 @@
      <height>451</height>
     </rect>
    </property>
+   <property name="wordWrap">
+    <bool>false</bool>
+   </property>
    <property name="rowCount">
     <number>0</number>
    </property>
@@ -43,7 +46,7 @@
     <bool>false</bool>
    </attribute>
   </widget>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="save_2_csv_button">
    <property name="geometry">
     <rect>
      <x>320</x>
