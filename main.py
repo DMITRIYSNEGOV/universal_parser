@@ -19,6 +19,8 @@ import re
 from random import randint
 import urllib.parse
 from requests.models import PreparedRequest
+import time
+import math
 
 from selenium import webdriver
 import selenium.webdriver
@@ -126,12 +128,23 @@ class Parser():
 
         return result_list_attr
 
+class MainProgressBarClass(QThread):
+    update_progress_bar = pyqtSignal(int)
 
+    def __init__(self, progress_count):
+        super(MainProgressBarClass,self).__init__()
+        self.progress_value = math.ceil(100 / progress_count) 
+
+    def run(self):
+        self.update_progress_bar.emit(self.progress_value)
 
 class MainThreadClass(QThread, Parser):
+    """
+    Runs a gathering url thread
+    """
     get_list_urls = pyqtSignal(list)
 
-    def __init__(self, section_url, section_tag, product_tag, type_browser, pag_name, pag_from, pag_to, pag_type):
+    def __init__(self, progress_bar, section_url, section_tag, product_tag, type_browser, pag_name, pag_from, pag_to, pag_type):
         super(MainThreadClass,self).__init__()
         self.section_url = section_url
         self.section_tag = section_tag
@@ -141,6 +154,10 @@ class MainThreadClass(QThread, Parser):
         self.pag_from = pag_from
         self.pag_to = pag_to
         self.pag_type = pag_type
+        self.progress_bar = progress_bar
+
+    def update_progress_bar(self, value):
+        self.progress_bar.setValue(self.progress_bar.value() + value)
 
     def get_list_link(self, section_url, section_tag, product_tag, type_browser, pag_name, pag_from, pag_to, pag_type):
         html_code = self.get_html_code(url = section_url, type_browser = type_browser)
@@ -168,6 +185,12 @@ class MainThreadClass(QThread, Parser):
                 url_product_list.append(product_link)
                 print(product_link)
         print(len(list_product))
+
+        if not ((self.pag_name is not None) and (self.pag_from is not None)):
+            self.MainProgressBarClass = MainProgressBarClass(1)
+            self.MainProgressBarClass.start()
+            self.MainProgressBarClass.update_progress_bar.connect(self.update_progress_bar)
+
 
         # переход на следующую страницу
         # if self.groupBox_pag.isEnabled():
@@ -229,6 +252,10 @@ class MainThreadClass(QThread, Parser):
                         raise
                 print(len(list_product))
 
+                self.MainProgressBarClass = MainProgressBarClass(pag_to)
+                self.MainProgressBarClass.start()
+                self.MainProgressBarClass.update_progress_bar.connect(self.update_progress_bar)
+
         # вывод всех URL товаров и их количество
         url_product_list = list(set(url_product_list))
 
@@ -270,9 +297,6 @@ class MainThreadClass(QThread, Parser):
         else:
             return True
 
-
-
-
     def run(self):
         list_urls = self.get_list_link(
             section_url = self.section_url, 
@@ -284,6 +308,7 @@ class MainThreadClass(QThread, Parser):
             pag_to = self.pag_to, 
             pag_type = self.pag_type)
         self.get_list_urls.emit(list_urls)
+
 
 class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
     def __init__(self):
@@ -305,14 +330,34 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
         self.section_url.textChanged.connect(self.validate_input)
         self.section_tag.textChanged.connect(self.validate_input)
         self.product_tag.textChanged.connect(self.validate_input)
+        self.pag_name.textChanged.connect(self.validate_input)
+        self.pag_to.textChanged.connect(self.validate_input)
+        self.pag_from.textChanged.connect(self.validate_input)
+        self.check_is_pag.stateChanged.connect(self.validate_input)
+
 
     def validate_input(self):
-        if(self.section_url.text() != "" and self.section_tag.toPlainText() != "" and self.product_tag.toPlainText() != ""):
-            self.get_html_button.setEnabled(True)
+        if not(self.check_is_pag.isChecked()):
+            if((self.section_url.text() != "") and 
+            (self.section_tag.toPlainText() != "") and 
+            (self.product_tag.toPlainText() != "")):
+                self.get_html_button.setEnabled(True)
+            else:
+                self.get_html_button.setEnabled(False)
         else:
-            self.get_html_button.setEnabled(False)
+            if(self.check_is_pag.isChecked() and 
+            self.pag_name.text() != "" and 
+            self.pag_to.text() != "" and 
+            self.pag_to.text() != "" and 
+            self.section_url.text() != "" and 
+            self.section_tag.toPlainText() != "" and 
+            self.product_tag.toPlainText() != ""):
+                self.get_html_button.setEnabled(True)
+            else:
+                self.get_html_button.setEnabled(False)
 
     def start_getting_urls(self):
+        self.progressBar.setValue(0);
         self.url_product_list.setRowCount(0)
 
         section_url = self.section_url.text()
@@ -343,6 +388,7 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
             type_browser = "phantomjs"
 
         self.MainThreadClass = MainThreadClass(
+                                    progress_bar = self.progressBar,
                                     section_url=section_url,
                                     section_tag=section_tag,
                                     product_tag=product_tag,
@@ -380,6 +426,8 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
             self.groupBox_pag.setEnabled(False)
 
     def get_list_urls(self, list_urls):
+        self.progressBar.setValue(100)
+
         # диалоговое сообщение о завершении парсинга
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
@@ -396,6 +444,9 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
 
         # включаем кнопку "Настроить продукт"
         self.open_product_form.setEnabled(True)
+
+   
+
 class productwindow(QWidget, Ui_ProductWindow, Parser):
     def __init__(self, list_product_urls, type_browser):
         super(productwindow, self).__init__()    
