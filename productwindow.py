@@ -48,6 +48,13 @@ class Ui_ProductWindow(object):
         font.setPointSize(16)
         self.get_products_button.setFont(font)
         self.get_products_button.setObjectName("get_products_button")
+        self.progressBar = QtWidgets.QProgressBar(ProductWindow)
+        self.progressBar.setGeometry(QtCore.QRect(10, 465, 201, 31))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        self.progressBar.setFont(font)
+        self.progressBar.setProperty("value", 0)
+        self.progressBar.setObjectName("progressBar")
 
         self.retranslateUi(ProductWindow)
         QtCore.QMetaObject.connectSlotsByName(ProductWindow)
@@ -57,5 +64,6 @@ class Ui_ProductWindow(object):
         ProductWindow.setWindowTitle(_translate("ProductWindow", "Универсальный парсер"))
         self.add_row_button.setText(_translate("ProductWindow", "Добавить  ячейку"))
         self.get_products_button.setText(_translate("ProductWindow", "Получать товары"))
+        self.progressBar.setFormat(_translate("ProductWindow", "%p%"))
 
 

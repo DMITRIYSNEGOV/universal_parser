@@ -48,11 +48,32 @@ class Parser():
             elif(type_browser == "chrome"):
                 driver = webdriver.Chrome(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\chromedriver.exe"))
             else:
-                driver = webdriver.Ie(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\IEDriverServer.exe"))
+                # driver = webdriver.Ie(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\IEDriverServer.exe"))
+                from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+
+                user_agent = (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) " +
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.57 Safari/537.36"
+                )
+
+                dcap = dict(DesiredCapabilities.PHANTOMJS)
+                dcap["phantomjs.page.settings.userAgent"] = user_agent
+                driver = webdriver.PhantomJS(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"),
+                    service_args=['--ignore-ssl-errors=true', '--ssl-protocol=any'], desired_capabilities=dcap)
         except Exception as e:
             print(e)
-            driver = webdriver.Ie(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\IEDriverServer.exe"))
-            # driver = webdriver.PhantomJS(os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"))
+            # driver = webdriver.Ie(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\IEDriverServer.exe"))
+            from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+
+            user_agent = (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.57 Safari/537.36"
+            )
+
+            dcap = dict(DesiredCapabilities.PHANTOMJS)
+            dcap["phantomjs.page.settings.userAgent"] = user_agent
+            driver = webdriver.PhantomJS(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"),
+                service_args=['--ignore-ssl-errors=true', '--ssl-protocol=any'], desired_capabilities=dcap)
         driver.wait = WebDriverWait(driver, 60)
         return driver
 
@@ -128,11 +149,11 @@ class Parser():
 
         return result_list_attr
 
-class MainProgressBarClass(QThread):
+class ProgressBarClass(QThread):
     update_progress_bar = pyqtSignal(int)
 
     def __init__(self, progress_count):
-        super(MainProgressBarClass,self).__init__()
+        super(ProgressBarClass,self).__init__()
         self.progress_value = math.ceil(100 / progress_count) 
 
     def run(self):
@@ -187,9 +208,9 @@ class MainThreadClass(QThread, Parser):
         print(len(list_product))
 
         if not ((self.pag_name is not None) and (self.pag_from is not None)):
-            self.MainProgressBarClass = MainProgressBarClass(1)
-            self.MainProgressBarClass.start()
-            self.MainProgressBarClass.update_progress_bar.connect(self.update_progress_bar)
+            self.ProgressBarClass = ProgressBarClass(1)
+            self.ProgressBarClass.start()
+            self.ProgressBarClass.update_progress_bar.connect(self.update_progress_bar)
 
 
         # переход на следующую страницу
@@ -252,9 +273,9 @@ class MainThreadClass(QThread, Parser):
                         raise
                 print(len(list_product))
 
-                self.MainProgressBarClass = MainProgressBarClass(pag_to)
-                self.MainProgressBarClass.start()
-                self.MainProgressBarClass.update_progress_bar.connect(self.update_progress_bar)
+                self.ProgressBarClass = ProgressBarClass(pag_to)
+                self.ProgressBarClass.start()
+                self.ProgressBarClass.update_progress_bar.connect(self.update_progress_bar)
 
         # вывод всех URL товаров и их количество
         url_product_list = list(set(url_product_list))
@@ -310,6 +331,75 @@ class MainThreadClass(QThread, Parser):
         self.get_list_urls.emit(list_urls)
 
 
+class ProductThreadClass(QThread, Parser):
+    get_attr_table = pyqtSignal(list)
+
+    def __init__(self, list_product_urls, product_attr_with_params_list, type_browser, progress_bar):
+        super(ProductThreadClass,self).__init__() 
+        self.list_product_urls = list_product_urls,
+        self.product_attr_with_params_list = product_attr_with_params_list, 
+        self.type_browser = type_browser
+        self.progress_bar = progress_bar
+
+    def update_progress_bar(self, value):
+        self.progress_bar.setValue(self.progress_bar.value() + value)
+
+    def get_table(self, list_product_urls, product_attr_with_params_list, type_browser):
+        list_table = []
+
+        for product_url in list_product_urls:
+            try:
+                html_code = self.get_html_code(product_url, type_browser)
+                # name = self.get_product_name(html_code, product_name)
+
+                attr_name_list = ["URL"]
+                product_info = [product_url]
+                for product_attr in product_attr_with_params_list:
+                    product_attr_list = self.get_list_attrs(html_code, product_attr[0])
+
+                    # задаем название атрибутов   
+                    for i in range(0, len(product_attr_list)):
+                        if(product_attr[1] == "with_name"):
+                            if (i%2)==0:
+                                attr_name_list.append(product_attr_list[i].text)
+                        else:
+                            attr_name_list.append(product_attr[1])
+                    print(attr_name_list)
+                list_table.append(attr_name_list)
+
+                for product_attr in product_attr_with_params_list:
+                    product_attr_list = self.get_list_attrs(html_code, product_attr[0])
+                    # задаем значения атрибутов             
+                    for i in range(0, len(product_attr_list)):
+                        if(product_attr[1] == "with_name"):
+                            if(i%2 != 0):
+                                print(product_attr_list[i].text)
+                                product_info.append(product_attr_list[i].text)
+                        else:
+                            print(product_attr_list[i].text)
+                            product_info.append(product_attr_list[i].text)
+                list_table.append(product_info)
+
+                self.ProgressBarClass = ProgressBarClass(len(list_product_urls))
+                self.ProgressBarClass.start()
+                self.ProgressBarClass.update_progress_bar.connect(self.update_progress_bar)
+            except Exception as e:
+                print(e)
+                print("{} ERROR".format(product_url))
+
+        return list_table
+
+
+
+
+    def run(self):
+        list_attrs = self.get_table(
+            list_product_urls=self.list_product_urls[0],
+            product_attr_with_params_list=self.product_attr_with_params_list[0], 
+            type_browser=self.type_browser)
+        self.get_attr_table.emit(list_attrs)
+
+
 class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
     def __init__(self):
         super(mywindow, self).__init__()
@@ -357,7 +447,10 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
                 self.get_html_button.setEnabled(False)
 
     def start_getting_urls(self):
-        self.progressBar.setValue(0);
+        self.get_html_button.setEnabled(False)
+        self.open_product_form.setEnabled(False)
+
+        self.progressBar.setValue(0)
         self.url_product_list.setRowCount(0)
 
         section_url = self.section_url.text()
@@ -386,6 +479,9 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
             type_browser = "edje"
         else:
             type_browser = "phantomjs"
+
+        self.groupBox_pag.setEnabled(False)
+        self.check_is_pag.setEnabled(False)
 
         self.MainThreadClass = MainThreadClass(
                                     progress_bar = self.progressBar,
@@ -428,24 +524,36 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
     def get_list_urls(self, list_urls):
         self.progressBar.setValue(100)
 
-        # диалоговое сообщение о завершении парсинга
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-        msg.setWindowTitle("Успешно")
-        msg.setText("Получены {} ссылок на товары".format(len(list_urls)))
-        msg.exec();
-        
-        for product_url in list_urls:
-            print(product_url)
-            # вывод URL продукта в правую панель на главной странице
-            row = self.url_product_list.rowCount()
-            self.url_product_list.setRowCount(row+1)
-            self.url_product_list.setItem(row, 0, QTableWidgetItem(product_url))
+        if(len(list_urls)>0):
+            for product_url in list_urls:
+                print(product_url)
+                # вывод URL продукта в правую панель на главной странице
+                row = self.url_product_list.rowCount()
+                self.url_product_list.setRowCount(row+1)
+                self.url_product_list.setItem(row, 0, QTableWidgetItem(product_url))
 
-        # включаем кнопку "Настроить продукт"
-        self.open_product_form.setEnabled(True)
+            # диалоговое сообщение о завершении парсинга
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("Успешно")
+            msg.setText("Получены {} ссылок на товары".format(len(list_urls)))
+            msg.exec();
 
+            # включаем кнопку "Настроить продукт"
+            self.open_product_form.setEnabled(True)
+        else:
+             # диалоговое сообщение о завершении парсинга
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("Неудача")
+            msg.setText("Не найдено")
+            msg.exec();
    
+        self.get_html_button.setEnabled(True)
+        self.check_is_pag.setEnabled(True)
+        if self.check_is_pag.isChecked():
+            self.groupBox_pag.setEnabled(True)
+
 
 class productwindow(QWidget, Ui_ProductWindow, Parser):
     def __init__(self, list_product_urls, type_browser):
@@ -512,6 +620,10 @@ class productwindow(QWidget, Ui_ProductWindow, Parser):
 
 
     def open_result_window(self):
+        self.get_products_button.setEnabled(False)
+        self.add_row_button.setEnabled(False)
+        self.progressBar.setValue(0)
+
         # запоминаем все названия и значения атрибутов в виде списка
         # [(key1, value1), (key2, value2), (key3, value3)]
         row = self.attr_product_list.rowCount()
@@ -525,95 +637,114 @@ class productwindow(QWidget, Ui_ProductWindow, Parser):
 
             product_attr_with_params_list.append( (html_attr, param_attr) )
 
-        self.window = parsedwindow(
+        # self.window = parsedwindow(
+        #     list_product_urls=self.list_product_urls,
+        #     product_attr_with_params_list=product_attr_with_params_list, 
+        #     type_browser=self.type_browser)
+        # self.window.show()
+
+        self.ProductThreadClass = ProductThreadClass(
             list_product_urls=self.list_product_urls,
             product_attr_with_params_list=product_attr_with_params_list, 
-            type_browser=self.type_browser)
+            type_browser=self.type_browser,
+            progress_bar=self.progressBar)
+        self.ProductThreadClass.start()
+        self.ProductThreadClass.get_attr_table.connect(self.get_attr_table)
+
+    def get_attr_table(self, list_table):
+        print(list_table)
+
+        self.get_products_button.setEnabled(True)
+        self.add_row_button.setEnabled(True)
+        self.progressBar.setValue(100)
+
+        self.window = parsedwindow(list_table)
         self.window.show()
 
 
 class parsedwindow(QWidget, Ui_ParsedWindow, Parser):
-    def __init__(self, 
-                list_product_urls,
-                product_attr_with_params_list, 
-                type_browser):
+    def __init__(self, list_table):
         super(parsedwindow, self).__init__()    
         self.setupUi(self)
         self.setWindowFlags(QtCore.Qt.MSWindowsFixedSizeDialogHint)
         self.setWindowIcon(QtGui.QIcon("icon.png"))
 
-        self.list_product_urls = list_product_urls
-        self.product_attr_with_params_list = product_attr_with_params_list
-        self.type_browser = type_browser
-
-        self.get_table(list_product_urls, product_attr_with_params_list, type_browser)
+        self.list_table = list_table
 
         self.save_2_csv_button.clicked.connect(self.save_to_csv)
 
-    def get_table(self, list_product_urls, product_attr_with_params_list, type_browser):
+        max_column_count = 0
+        for i in self.list_table:
+            if len(i) > max_column_count:
+                max_column_count = len(i)
+        self.result_product_list.setRowCount(len(self.list_table))
+        self.result_product_list.setColumnCount(max_column_count)
+
+        for i in range(0, len(self.list_table)):
+            for j in range(0, len(self.list_table[i])):
+                self.result_product_list.setItem(i, j, QTableWidgetItem(self.list_table[i][j]))
+
+   # def get_table(self, list_product_urls, product_attr_with_params_list, type_browser):
         
-    ##############################################################
-    ##############################################################
-    ##############################################################
-    ##############################################################
-        self.result_product_list.setColumnCount(99)
-    ##############################################################
-    ##############################################################
-    ##############################################################
-    ##############################################################
+   #  ##############################################################
+   #  ##############################################################
+   #  ##############################################################
+   #  ##############################################################
+   #      self.result_product_list.setColumnCount(99)
+   #  ##############################################################
+   #  ##############################################################
+   #  ##############################################################
+   #  ##############################################################
 
+   #      # вывод названий и атрибутов продуктов
+   #      for product_url in list_product_urls:
+   #          try:
+   #              html_code = self.get_html_code(product_url, type_browser)
+   #              # name = self.get_product_name(html_code, product_name)
 
+   #              row = self.result_product_list.rowCount()
+   #              attr_name_list = ["URL"]
+   #              product_info = [product_url]
+   #              for product_attr in product_attr_with_params_list:
+   #                  product_attr_list = self.get_list_attrs(html_code, product_attr[0])
 
-        # вывод названий и атрибутов продуктов
-        for product_url in list_product_urls:
-            try:
-                html_code = self.get_html_code(product_url, type_browser)
-                # name = self.get_product_name(html_code, product_name)
-
-                row = self.result_product_list.rowCount()
-                attr_name_list = ["URL"]
-                product_info = [product_url]
-                for product_attr in product_attr_with_params_list:
-                    product_attr_list = self.get_list_attrs(html_code, product_attr[0])
-
-                    # задаем название атрибутов   
-                    for i in range(0, len(product_attr_list)):
-                        if(product_attr[1] == "with_name"):
-                            if (i%2)==0:
-                                attr_name_list.append(product_attr_list[i].text)
-                        else:
-                            attr_name_list.append(product_attr[1])
-                    print(attr_name_list)
+   #                  # задаем название атрибутов   
+   #                  for i in range(0, len(product_attr_list)):
+   #                      if(product_attr[1] == "with_name"):
+   #                          if (i%2)==0:
+   #                              attr_name_list.append(product_attr_list[i].text)
+   #                      else:
+   #                          attr_name_list.append(product_attr[1])
+   #                  print(attr_name_list)
                     
 
-                # вывод названия атрибутов в таблицу
-                for i in range(0, len(attr_name_list)):
-                    self.result_product_list.setRowCount(row+1)
+   #              # вывод названия атрибутов в таблицу
+   #              for i in range(0, len(attr_name_list)):
+   #                  self.result_product_list.setRowCount(row+1)
                     
-                    self.result_product_list.setItem(row, i, QTableWidgetItem(attr_name_list[i]))
+   #                  self.result_product_list.setItem(row, i, QTableWidgetItem(attr_name_list[i]))
 
-                for product_attr in product_attr_with_params_list:
-                    product_attr_list = self.get_list_attrs(html_code, product_attr[0])
-                    # задаем значения атрибутов             
-                    for i in range(0, len(product_attr_list)):
-                        if(product_attr[1] == "with_name"):
-                            if(i%2 != 0):
-                                print(product_attr_list[i].text)
-                                product_info.append(product_attr_list[i].text)
-                        else:
-                            print(product_attr_list[i].text)
-                            product_info.append(product_attr_list[i].text)
+   #              for product_attr in product_attr_with_params_list:
+   #                  product_attr_list = self.get_list_attrs(html_code, product_attr[0])
+   #                  # задаем значения атрибутов             
+   #                  for i in range(0, len(product_attr_list)):
+   #                      if(product_attr[1] == "with_name"):
+   #                          if(i%2 != 0):
+   #                              print(product_attr_list[i].text)
+   #                              product_info.append(product_attr_list[i].text)
+   #                      else:
+   #                          print(product_attr_list[i].text)
+   #                          product_info.append(product_attr_list[i].text)
 
-                    # выводим значения атрибутов
-                    for i in range(0, len(product_info)):
-                        self.result_product_list.setRowCount(row+2)
-                        # self.result_product_list.setColumnCount(i+1)
-                        self.result_product_list.setItem(row+1, i, QTableWidgetItem(product_info[i]))
+   #                  # выводим значения атрибутов
+   #                  for i in range(0, len(product_info)):
+   #                      self.result_product_list.setRowCount(row+2)
+   #                      # self.result_product_list.setColumnCount(i+1)
+   #                      self.result_product_list.setItem(row+1, i, QTableWidgetItem(product_info[i]))
 
-            except Exception as e:
-                print(e)
-                print("{} ERROR".format(product_url))
-
+   #          except Exception as e:
+   #              print(e)
+   #              print("{} ERROR".format(product_url))
 
     def save_to_csv(self):
         # записывание атрибутов в csv файл
