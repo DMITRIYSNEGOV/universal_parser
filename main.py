@@ -47,33 +47,11 @@ class Parser():
                 driver = webdriver.Edge(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\MicrosoftWebDriver.exe"))
             elif(type_browser == "chrome"):
                 driver = webdriver.Chrome(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\chromedriver.exe"))
-            else:
-                # driver = webdriver.Ie(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\IEDriverServer.exe"))
-                from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-
-                user_agent = (
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) " +
-                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.57 Safari/537.36"
-                )
-
-                dcap = dict(DesiredCapabilities.PHANTOMJS)
-                dcap["phantomjs.page.settings.userAgent"] = user_agent
-                driver = webdriver.PhantomJS(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"),
-                    service_args=['--ignore-ssl-errors=true', '--ssl-protocol=any'], desired_capabilities=dcap)
         except Exception as e:
             print(e)
-            # driver = webdriver.Ie(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\IEDriverServer.exe"))
-            from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+            return "error"
 
-            user_agent = (
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) " +
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.57 Safari/537.36"
-            )
 
-            dcap = dict(DesiredCapabilities.PHANTOMJS)
-            dcap["phantomjs.page.settings.userAgent"] = user_agent
-            driver = webdriver.PhantomJS(executable_path=os.path.join(os.path.abspath(os.curdir),"drivers\\phantomjs.exe"),
-                service_args=['--ignore-ssl-errors=true', '--ssl-protocol=any'], desired_capabilities=dcap)
         driver.wait = WebDriverWait(driver, 60)
         return driver
 
@@ -89,11 +67,14 @@ class Parser():
     def get_html_code(self, url, type_browser):
         try:
             driver = self.init_driver(type_browser)
+            if driver == "error":
+                return "error"
             driver.get(url)
             self.wait_for_ajax(driver)
             html_code = driver.page_source
         finally:
-            driver.close()
+            if driver != "error":
+                driver.close()
         return html_code
 
 
@@ -182,6 +163,8 @@ class MainThreadClass(QThread, Parser):
 
     def get_list_link(self, section_url, section_tag, product_tag, type_browser, pag_name, pag_from, pag_to, pag_type):
         html_code = self.get_html_code(url = section_url, type_browser = type_browser)
+        if(html_code == "error"):
+            return []
 
         # получить страницу раздела    
         soup_section = bs(section_tag, "lxml")
@@ -425,6 +408,23 @@ class mywindow(QtWidgets.QMainWindow, Ui_MainWindow, Parser):
         self.pag_from.textChanged.connect(self.validate_input)
         self.check_is_pag.stateChanged.connect(self.validate_input)
 
+    def closeEvent(self, event):
+        box = QtWidgets.QMessageBox() 
+        box.setIcon(QtWidgets.QMessageBox.Question) 
+        box.setWindowTitle('Информация') 
+        box.setText('Вы уверены, что хотите уйти?') 
+        box.setStandardButtons(QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No) 
+        buttonY = box.button(QtWidgets.QMessageBox.Yes) 
+        buttonY.setText('Да') 
+        buttonN = box.button(QtWidgets.QMessageBox.No) 
+        buttonN.setText('Нет') 
+        box.exec_() 
+
+        if box.clickedButton() == buttonY: 
+            event.accept()
+            app.quit()
+        elif box.clickedButton() == buttonN: 
+            event.ignore()
 
     def validate_input(self):
         if not(self.check_is_pag.isChecked()):
@@ -594,6 +594,24 @@ class productwindow(QWidget, Ui_ProductWindow, Parser):
         # обработчик кнопки "получать товары"
         self.get_products_button.clicked.connect(self.open_result_window)
 
+    def closeEvent(self, event):
+        box = QtWidgets.QMessageBox() 
+        box.setIcon(QtWidgets.QMessageBox.Question) 
+        box.setWindowTitle('Информация') 
+        box.setText('Вы уверены, что хотите уйти?') 
+        box.setStandardButtons(QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No) 
+        buttonY = box.button(QtWidgets.QMessageBox.Yes) 
+        buttonY.setText('Да') 
+        buttonN = box.button(QtWidgets.QMessageBox.No) 
+        buttonN.setText('Нет') 
+        box.exec_() 
+
+        if box.clickedButton() == buttonY: 
+            event.accept()
+            app.quit()
+        elif box.clickedButton() == buttonN: 
+            event.ignore()
+
     def add_row(self):
         row = self.attr_product_list.rowCount()
         self.attr_product_list.setRowCount(row + 1)
@@ -635,7 +653,8 @@ class productwindow(QWidget, Ui_ProductWindow, Parser):
             else:
                 param_attr = self.attr_product_list.cellWidget(i,1).findChildren(QtWidgets.QLineEdit)[0].text()
 
-            product_attr_with_params_list.append( (html_attr, param_attr) )
+            if(html_attr != "" and param_attr != ""):
+                product_attr_with_params_list.append( (html_attr, param_attr) )
 
         # self.window = parsedwindow(
         #     list_product_urls=self.list_product_urls,
@@ -682,7 +701,27 @@ class parsedwindow(QWidget, Ui_ParsedWindow, Parser):
 
         for i in range(0, len(self.list_table)):
             for j in range(0, len(self.list_table[i])):
+                self.list_table[i][j] = self.list_table[i][j].replace("\n", "")
+                self.list_table[i][j] = self.list_table[i][j].replace("  ", "")
                 self.result_product_list.setItem(i, j, QTableWidgetItem(self.list_table[i][j]))
+
+    def closeEvent(self, event):
+        box = QtWidgets.QMessageBox() 
+        box.setIcon(QtWidgets.QMessageBox.Question) 
+        box.setWindowTitle('Информация') 
+        box.setText('Вы уверены, что хотите уйти?') 
+        box.setStandardButtons(QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No) 
+        buttonY = box.button(QtWidgets.QMessageBox.Yes) 
+        buttonY.setText('Да') 
+        buttonN = box.button(QtWidgets.QMessageBox.No) 
+        buttonN.setText('Нет') 
+        box.exec_() 
+
+        if box.clickedButton() == buttonY: 
+            event.accept()
+            app.quit()
+        elif box.clickedButton() == buttonN: 
+            event.ignore()
 
    # def get_table(self, list_product_urls, product_attr_with_params_list, type_browser):
         
@@ -748,18 +787,37 @@ class parsedwindow(QWidget, Ui_ParsedWindow, Parser):
 
     def save_to_csv(self):
         # записывание атрибутов в csv файл
-        with open("test.csv", "a", newline='') as csv_file:
-            writer = csv.writer(csv_file)
+        try:
+            fileName = QFileDialog.getSaveFileName(self, 'Сохранение файла csv', 'c:\\', '*.csv')
 
-            row = self.result_product_list.rowCount()
-            col = self.result_product_list.columnCount()
-            for i in range(row):
-                row_attr_list = []
-                for j in range(col):
-                    if hasattr(self.result_product_list.item(i, j), 'text'):
-                        row_attr_list.append(self.result_product_list.item(i, j).text())
+            if fileName:
+                with open(fileName[0], "w", newline='') as csv_file:
+                    writer = csv.writer(csv_file)
 
-                writer.writerow(row_attr_list)
+                    row = self.result_product_list.rowCount()
+                    col = self.result_product_list.columnCount()
+                    for i in range(row):
+                        row_attr_list = []
+                        for j in range(col):
+                            if hasattr(self.result_product_list.item(i, j), 'text'):
+                                row_attr_list.append(self.result_product_list.item(i, j).text())
+
+                        writer.writerow(row_attr_list)
+
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("Успешно")
+            msg.setText("Файл успешно сохранен")
+            msg.exec();
+        except Exception as e:
+            print(e)
+
+            # диалоговое сообщение о завершении парсинга
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setWindowTitle("Ошибка")
+            msg.setText("Ошибка сохранения файла")
+            msg.exec();
                 
 
 
